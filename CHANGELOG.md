@@ -32,3 +32,7 @@
 ## [0.1.0] - 2026-11-27
 
 - Initialize VuSnap from NinoMark v0.5.0; independent application identity and MIT attribution.
+
+## [0.4.0] - Unreleased
+
+- Local OCR dialog, installed Windows OCR language packs and optional installed Tesseract eng/vie/bilingual engine, cancellation and image/output limits.

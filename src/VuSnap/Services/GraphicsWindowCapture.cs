@@ -124,7 +124,7 @@ public static class GraphicsWindowCapture
             Marshal.ThrowExceptionForHR(D3D11CreateDevice(IntPtr.Zero, 1, IntPtr.Zero, bgraSupport,
                 IntPtr.Zero, 0, 7, out native, out _, out context));
             var iid = new Guid("54EC77FA-1377-44E6-8C32-88FD5F44C84C");
-            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(native, ref iid, out dxgi));
+            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(native, in iid, out dxgi));
             Marshal.ThrowExceptionForHR(CreateDirect3D11DeviceFromDXGIDevice(dxgi, out wrapper));
             return WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(wrapper);
         }
