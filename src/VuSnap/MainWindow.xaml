@@ -224,7 +224,7 @@
         <WrapPanel Margin="0,12,0,0">
           <TextBlock x:Name="CaptureModeLabel" Style="{StaticResource SmallLabel}"/>
           <ComboBox x:Name="CaptureModeBox" Width="180" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">
-            <ComboBoxItem Tag="Region"/><ComboBoxItem Tag="Monitor"/><ComboBoxItem Tag="Desktop"/><ComboBoxItem Tag="ActiveWindow"/><ComboBoxItem Tag="WindowPicker"/><ComboBoxItem Tag="WindowHover"/><ComboBoxItem Tag="Repeat"/>
+            <ComboBoxItem Tag="Region"/><ComboBoxItem Tag="Monitor"/><ComboBoxItem Tag="Desktop"/><ComboBoxItem Tag="ActiveWindow"/><ComboBoxItem Tag="WindowPicker"/><ComboBoxItem Tag="WindowHover"/><ComboBoxItem Tag="Repeat"/><ComboBoxItem Tag="ColorPicker"/>
           </ComboBox>
           <TextBlock x:Name="CaptureDelayLabel" Style="{StaticResource SmallLabel}"/>
           <ComboBox x:Name="CaptureDelayBox" Width="100" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">

@@ -187,6 +187,8 @@
           <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Copy (Ctrl+C)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentCopy"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Hoàn tất &amp; copy (Enter)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Check" Foreground="#FF22C55E" Width="24" Height="24"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="Ocr_Click" ToolTip="OCR"><TextBlock Text="OCR" FontSize="11" FontWeight="Bold"/></Button>
+          <Button Style="{StaticResource ActionButton}" Click="ColorInspect_Click" ToolTip="Color picker"><TextBlock Text="RGB" FontSize="11" FontWeight="Bold"/></Button>
+          <Button Style="{StaticResource ActionButton}" Click="Barcode_Click" ToolTip="QR / Barcode"><TextBlock Text="QR" FontSize="12" FontWeight="Bold"/></Button>
         </StackPanel>
       </Border>
 

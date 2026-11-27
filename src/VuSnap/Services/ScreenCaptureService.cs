@@ -24,6 +24,7 @@ public static class ScreenCaptureService
         IReadOnlyList<Rectangle> targets = Array.Empty<Rectangle>();
         switch (request.Mode)
         {
+            case CaptureMode.ColorPicker:
             case CaptureMode.Monitor: initial = monitor; break;
             case CaptureMode.Desktop: bounds = desktop; initial = desktop; break;
             case CaptureMode.ActiveWindow:

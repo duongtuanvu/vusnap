@@ -2678,6 +2678,8 @@ public partial class CaptureWindow : Window
         switch (id)
         {
             case "Ocr": Ocr_Click(this, new RoutedEventArgs()); break;
+            case "ColorInspect": ColorInspect_Click(this, new RoutedEventArgs()); break;
+            case "Barcode": Barcode_Click(this, new RoutedEventArgs()); break;
             case "Copy" or "Confirm": DoCopy(); break;
             case "QuickSave": DoQuickSave(); break;
             case "SaveAs": SaveAs_Click(this, new RoutedEventArgs()); break;
