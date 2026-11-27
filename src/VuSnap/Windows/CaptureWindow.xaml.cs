@@ -12,6 +12,7 @@ using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Win32;
 using VuSnap.Models;
+using VuSnap.Core;
 using VuSnap.Services;
 using Color = System.Windows.Media.Color;
 using Brushes = System.Windows.Media.Brushes;
@@ -86,8 +87,9 @@ public partial class CaptureWindow : Window
     private readonly BitmapSource _source;
     private readonly DrawingRectangle _screenBounds;
     private readonly Ellipse[] _handles = new Ellipse[8];
-    private readonly Stack<UIElement> _undo = new();
-    private readonly Stack<UIElement> _redo = new();
+    private readonly CommandHistory<LayerState[]> _history = new(Array.Empty<LayerState>(), 50, new LayerStateComparer());
+    private bool _restoringHistory;
+    private bool _outputBusy;
     private readonly bool _ready;
     private readonly AppSettings _cfg = SettingsService.Load();
     private readonly Dictionary<(ModifierKeys, Key), string> _keyMap = new();
@@ -176,7 +178,8 @@ public partial class CaptureWindow : Window
         _zoom = Math.Clamp(_cfg.DefaultZoom, 1.5, 10);
         _zoomSaveTimer.Tick += (_, _) => { _zoomSaveTimer.Stop(); SaveLensDefaults(); };
         _badgeTimer.Tick += (_, _) => { _badgeTimer.Stop(); if (_drag == Drag.None) SizeBadge.Visibility = Visibility.Collapsed; };
-        Closed += (_, _) => { if (_zoomDirty) SaveLensDefaults(); };
+        Closing += (_, e) => { if (_outputBusy && !IsEnabled) e.Cancel = true; };
+        Closed += (_, _) => { _zoomSaveTimer.Stop(); _badgeTimer.Stop(); if (_zoomDirty) SaveLensDefaults(); };
         _lensRound = _cfg.DefaultLens != "Square";
         _font = string.IsNullOrWhiteSpace(_cfg.DefaultFont) ? "Segoe UI" : _cfg.DefaultFont;
         _weight = Presets.WeightIds.Contains(_cfg.DefaultFontWeight) ? _cfg.DefaultFontWeight : "SemiBold"; _italic = _cfg.DefaultFontItalic;
@@ -238,6 +241,7 @@ public partial class CaptureWindow : Window
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_outputBusy) return;
         var p = e.GetPosition(Root);
         if (_editor is not null)
         {
@@ -353,7 +357,7 @@ public partial class CaptureWindow : Window
                 if (el is Rectangle r && r.Tag is Ann { Kind: "Blur" or "Invert" }) ApplyEffect(r);
             foreach (var el in _selection)
                 if (el is Path mp && mp.Tag is Ann { Kind: "Magnifier" } ma) ApplyMagnifier(mp, ma);
-            UpdateOutline();
+            UpdateOutline(); RecordHistory();
             return;
         }
 
@@ -1079,7 +1083,7 @@ public partial class CaptureWindow : Window
             SettingsService.Save(s);
             _cfg.DefaultZoom = s.DefaultZoom; _cfg.DefaultLens = s.DefaultLens;
         }
-        catch { /* không lưu được thì thôi, lần sau dùng giá trị cũ */ }
+        catch (Exception ex) { ErrorLog.Write(ErrorCodes.SettingsWrite, ex); }
     }
 
     private void ApplyZoomToSelection()
@@ -1110,6 +1114,7 @@ public partial class CaptureWindow : Window
         _zoom = Math.Round(Math.Clamp(_zoom + (e.Delta > 0 ? step : -step), 1.5, 10) * 10) / 10;
         if (drawing && _current is Path cp && cp.Tag is Ann ca) { ca.Zoom = _zoom; ApplyMagnifier(cp, ca); }
         ApplyZoomToSelection();
+        if (!drawing) RecordHistory();
 
         // nhãn nhỏ cạnh con trỏ báo giá trị zoom
         SizeBadgeText.Text = "×" + _zoom.ToString("0.0", CultureInfo.InvariantCulture);
@@ -1752,7 +1757,7 @@ public partial class CaptureWindow : Window
                 if (a.Kind == "Text") { a.Font = _font; a.Weight = _weight; a.Italic = _italic; }
                 ApplyStyle(el); any = true;
             }
-        if (any) UpdateOutline();
+        if (any) { UpdateOutline(); RecordHistory(); }
     }
 
     // ── Chọn layer: một / nhiều (Ctrl) / dải (Shift) ──
@@ -1892,7 +1897,7 @@ public partial class CaptureWindow : Window
             eye.MouseLeftButtonDown += (_, e) =>
             {
                 cap.Visibility = cap.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                UpdateOutline(); RefreshLayers(); e.Handled = true;
+                RecordHistory(); UpdateOutline(); RefreshLayers(); e.Handled = true;
             };
             line.Children.Add(eye);
             line.Children.Add(new Ellipse { Width = 10, Height = 10, Fill = Frozen(a.Color), Stroke = Brushes.Gray, StrokeThickness = 0.5, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
@@ -1930,7 +1935,7 @@ public partial class CaptureWindow : Window
         {
             if (done) return;
             done = true;
-            if (save) a.Name = string.IsNullOrWhiteSpace(box.Text) ? null : box.Text.Trim();
+            if (save && Ink.Children.Contains(el) && ReferenceEquals(el.Tag, a)) { a.Name = string.IsNullOrWhiteSpace(box.Text) ? null : box.Text.Trim(); RecordHistory(); }
             RefreshLayers();
             Focus();
         }
@@ -1959,7 +1964,7 @@ public partial class CaptureWindow : Window
             Ink.Children.Remove(el);
             Ink.Children.Insert(target, el);
         }
-        RefreshLayers();
+        RecordHistory(); RefreshLayers();
     }
 
     private void DeleteSelected()
@@ -1967,7 +1972,7 @@ public partial class CaptureWindow : Window
         if (_selection.Count == 0) return;
         foreach (var el in _selection.ToList()) Ink.Children.Remove(el);
         _selection.Clear(); _primary = null; _anchor = null;
-        UpdateOutline();
+        RecordHistory(); UpdateOutline();
         RefreshLayers();
     }
 
@@ -1986,9 +1991,8 @@ public partial class CaptureWindow : Window
     /// <summary>Đăng ký layer vừa tạo xong vào lịch sử undo và chọn nó.</summary>
     private void Commit(FrameworkElement el)
     {
-        _undo.Push(el);
-        _redo.Clear();
         Select(el);
+        RecordHistory();
     }
 
     // ───────────────────────── Vẽ ─────────────────────────
@@ -2347,7 +2351,7 @@ public partial class CaptureWindow : Window
             _editTarget = null;
             numHost.Visibility = Visibility.Visible;
             if (int.TryParse(ed.Text, out var num) && num >= 0) { ((Ann)numHost.Tag).Label = num; ApplyStyle(numHost); }
-            UpdateOutline(); RefreshLayers(); Focus();
+            RecordHistory(); UpdateOutline(); RefreshLayers(); Focus();
             return;
         }
 
@@ -2362,7 +2366,7 @@ public partial class CaptureWindow : Window
                 Ink.Children.Remove(target);
             }
             else target.Text = ed.Text;
-            UpdateOutline(); RefreshLayers(); Focus();
+            RecordHistory(); UpdateOutline(); RefreshLayers(); Focus();
             return;
         }
 
@@ -2419,7 +2423,7 @@ public partial class CaptureWindow : Window
             rot.CenterX = sc.CenterX = c.X; rot.CenterY = sc.CenterY = c.Y;
             op(rot, sc);
         }
-        UpdateOutline();
+        RecordHistory(); UpdateOutline();
     }
 
     private void Rotate_Click(object sender, RoutedEventArgs e)
@@ -2444,14 +2448,12 @@ public partial class CaptureWindow : Window
             var c = CloneLayer(src);
             if (c is null) continue;
             Ink.Children.Insert(Ink.Children.IndexOf(src) + 1, c);
-            _undo.Push(c);
             clones.Add(c);
         }
         if (clones.Count == 0) return;
-        _redo.Clear();
         _selection.Clear(); _selection.AddRange(clones);
         _anchor = clones[0];
-        SetPrimary(clones[^1]);
+        SetPrimary(clones[^1]); RecordHistory();
     }
 
     /// <summary>Tạo bản sao của một layer (cùng thuộc tính, cùng phép xoay/lật), lệch nhẹ để nhìn thấy.</summary>
@@ -2497,28 +2499,16 @@ public partial class CaptureWindow : Window
 
     private void Undo()
     {
+        if (_drag != Drag.None || _outputBusy) return;
         CommitText();
-        while (_undo.Count > 0)
-        {
-            var el = _undo.Pop();
-            if (!Ink.Children.Contains(el)) continue; // layer đã bị xóa thủ công
-            Ink.Children.Remove(el);
-            _redo.Push(el);
-            _selection.Remove((FrameworkElement)el);
-            if (ReferenceEquals(el, _primary)) _primary = _selection.LastOrDefault();
-            break;
-        }
-        UpdateOutline(); RefreshLayers();
+        if (_history.TryUndo(out var state)) RestoreHistory(state);
     }
 
     private void Redo()
     {
+        if (_drag != Drag.None || _outputBusy) return;
         CommitText();
-        if (_redo.Count == 0) return;
-        var el = _redo.Pop();
-        Ink.Children.Add(el);
-        _undo.Push(el);
-        Select((FrameworkElement)el);
+        if (_history.TryRedo(out var state)) RestoreHistory(state);
     }
 
     private BitmapSource RenderFinal()
@@ -2555,75 +2545,100 @@ public partial class CaptureWindow : Window
         return bmp;
     }
 
-    private static void CopyToClipboard(BitmapSource bmp)
+    private static async Task CopyToClipboardAsync(BitmapSource bmp)
     {
         for (var i = 0; ; i++)
         {
             try { System.Windows.Clipboard.SetImage(bmp); return; }
-            catch (COMException) when (i < 5) { Thread.Sleep(60); } // clipboard đang bị app khác giữ
+            catch (COMException) when (i < 5) { await Task.Delay(60); }
         }
     }
 
-    private static void SaveToFile(BitmapSource bmp, string path)
+    private static void SaveToFile(BitmapSource bmp, string path, bool overwrite)
     {
-        BitmapEncoder enc = System.IO.Path.GetExtension(path).Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+        var ext = System.IO.Path.GetExtension(path);
+        BitmapEncoder enc = ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
             ? new JpegBitmapEncoder { QualityLevel = 95 }
-            : new PngBitmapEncoder();
+            : ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                ? new PngBitmapEncoder() : throw new NotSupportedException("ERR_EXPORT_FORMAT");
         enc.Frames.Add(BitmapFrame.Create(bmp));
-        using var fs = File.Create(path);
-        enc.Save(fs);
+        AtomicFile.Write(path, stream => enc.Save(stream), overwrite);
+    }
+
+    private void ReportOutputError(string code, string message, Exception ex)
+    {
+        ErrorLog.Write(code, ex);
+        System.Windows.MessageBox.Show(this, $"[{code}] {message}", AppInfo.AppName);
+    }
+
+    private async Task OutputAsync(string? path, bool overwrite, bool copy)
+    {
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
+        _outputBusy = true;
+        IsEnabled = false;
+        string code = ErrorCodes.Render;
+        try
+        {
+            var bmp = RenderFinal();
+            if (path is not null)
+            {
+                code = ErrorCodes.Export;
+                await Task.Run(() => SaveToFile(bmp, path, overwrite));
+            }
+            if (copy)
+            {
+                code = ErrorCodes.Clipboard;
+                try { await CopyToClipboardAsync(bmp); }
+                catch (Exception ex) when (path is not null)
+                {
+                    ReportOutputError(code, Loc.Lang == "vi" ? "Ảnh đã lưu; không thể sao chép vào clipboard." : "Image saved; clipboard copy failed.", ex);
+                }
+            }
+            IsEnabled = true;
+            Close();
+        }
+        catch (Exception ex) { ReportOutputError(code, Loc.T(code == ErrorCodes.Clipboard ? "err.copy" : "err.save"), ex); }
+        finally { _outputBusy = false; IsEnabled = true; }
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e) => DoCopy();
-
-    private void DoCopy()
-    {
-        if (!_hasSel) return;
-        try { CopyToClipboard(RenderFinal()); Close(); }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.copy") + ex.Message, AppInfo.AppName); }
-    }
+    private async void DoCopy() => await OutputAsync(null, false, true);
 
     private void QuickSave_Click(object sender, RoutedEventArgs e) => DoQuickSave();
 
-    private void DoQuickSave()
+    private async void DoQuickSave()
     {
-        if (!_hasSel) return;
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
         try
         {
             var settings = SettingsService.Load();
-            var dir = string.IsNullOrWhiteSpace(settings.SaveDirectory)
-                ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VuSnap")
-                : settings.SaveDirectory;
-            Directory.CreateDirectory(dir);
-            var ext = settings.DefaultFormat.Equals("JPG", StringComparison.OrdinalIgnoreCase) ? ".jpg" : ".png";
-            var path = System.IO.Path.Combine(dir, "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ext);
-            var bmp = RenderFinal();
-            SaveToFile(bmp, path);
-            if (settings.CopyAfterCapture) CopyToClipboard(bmp);
-            Close();
+            var ext = settings.DefaultFormat == "JPG" ? ".jpg" : ".png";
+            var path = AtomicFile.NewCapturePath(settings.SaveDirectory, ext, DateTime.Now);
+            await OutputAsync(path, false, settings.CopyAfterCapture);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.save") + ex.Message, AppInfo.AppName); }
+        catch (Exception ex) { ReportOutputError(ErrorCodes.Export, Loc.T("err.save"), ex); }
     }
 
-    private void SaveAs_Click(object sender, RoutedEventArgs e)
+    private async void SaveAs_Click(object sender, RoutedEventArgs e)
     {
-        if (!_hasSel) return;
-        var settings = SettingsService.Load();
-        var dialog = new SaveFileDialog
-        {
-            Title = Loc.T("dlg.saveTitle"), Filter = "PNG image|*.png|JPEG image|*.jpg", DefaultExt = ".png",
-            FileName = "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png",
-            InitialDirectory = Directory.Exists(settings.SaveDirectory) ? settings.SaveDirectory : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-        };
-        if (dialog.ShowDialog(this) != true) return;
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
         try
         {
-            var bmp = RenderFinal();
-            SaveToFile(bmp, dialog.FileName);
-            if (settings.CopyAfterCapture) CopyToClipboard(bmp);
-            Close();
+            var settings = SettingsService.Load();
+            var jpg = settings.DefaultFormat == "JPG";
+            var dialog = new SaveFileDialog
+            {
+                Title = Loc.T("dlg.saveTitle"), Filter = "PNG image|*.png|JPEG image|*.jpg",
+                FilterIndex = jpg ? 2 : 1, DefaultExt = jpg ? ".jpg" : ".png",
+                FileName = "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff"),
+                OverwritePrompt = true, AddExtension = true,
+                InitialDirectory = Directory.Exists(settings.SaveDirectory) ? settings.SaveDirectory : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+            };
+            if (dialog.ShowDialog(this) != true) return;
+            await OutputAsync(dialog.FileName, true, settings.CopyAfterCapture);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.save") + ex.Message, AppInfo.AppName); }
+        catch (Exception ex) { ReportOutputError(ErrorCodes.Export, Loc.T("err.save"), ex); }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
@@ -2658,6 +2673,7 @@ public partial class CaptureWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        if (_outputBusy) { e.Handled = true; return; }
         if (e.OriginalSource is TextBox) return; // ô nhập chữ / hex tự xử lý phím
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
@@ -2669,7 +2685,7 @@ public partial class CaptureWindow : Window
             e.Handled = true;
             return;
         }
-        if (!_hasSel) return;
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
         if (_keyMap.TryGetValue((mods, key), out var id) && RunShortcut(id)) e.Handled = true;
     }
 }
