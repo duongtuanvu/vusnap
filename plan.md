@@ -2,7 +2,7 @@
 
 > Single source of truth for development scope, implementation progress and acceptance.
 > Updated: 2026-11-27 (Asia/Bangkok).
-> Current merged application version: **0.3.1**. CI portable and installer artifacts are available; no public release/tag has been verified.
+> Current merged application version: **0.4.0**. CI verifies packaging without uploading artifacts; preview is manual. No public release/tag has been verified.
 
 ## Working agreement
 
@@ -99,10 +99,11 @@ Owner reports WGC works on Windows; detailed acceptance remains open. [PR #5](ht
 
 ## v0.4.0 — Offline OCR
 
-- [ ] Offline OCR (evaluate Windows OCR and local alternatives; EN/VI support with explicit language availability).
-- [ ] Select/copy recognized text, confidence/empty-result handling and optional region OCR.
-- [ ] No cloud upload or telemetry by default; verify privacy and cleanup.
-- [ ] Tests, CI pass and merge.
+- [x] Offline OCR via installed Windows languages and optional installed Tesseract eng/vie/bilingual.
+- [x] Recognize selected region, editable/copyable text, empty-result handling and cancellation (Windows OCR does not expose confidence).
+- [x] Local-only recognition, no automatic upload or history; no temporary screenshot files.
+- [ ] Verify actual English/Vietnamese OCR quality, installed Tesseract and cancellation on Windows.
+- [x] Tests, CI pass and merge. [PR #6](https://github.com/duongtuanvu/vusnap/pull/6), [CI](https://github.com/duongtuanvu/vusnap/actions/runs/45971425578), merge 7aec925.
 
 ## v0.4.3 — Color Picker & QR Scanner
 
@@ -164,7 +165,7 @@ Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the curre
 
 ## Next task
 
-Implement v0.4.0 offline OCR, then v0.4.3 Color Picker & QR Scanner only. WGC merged; detailed runtime acceptance remains open.
+Implement v0.4.3 Color Picker & QR Scanner, then evaluate v0.5.0. WGC and OCR merged; detailed runtime acceptance remains open.
 
 ### GitHub Actions resource policy
 

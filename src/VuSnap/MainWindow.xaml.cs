@@ -237,6 +237,20 @@ public partial class MainWindow : Window
             }
             else result = await Task.Run(() => ScreenCaptureService.Capture(request, token), token);
             token.ThrowIfCancellationRequested();
+            if (mode == CaptureMode.ColorPicker)
+            {
+                var inspector = new ColorInspectorWindow(result.Image);
+                inspector.Closed += (_, _) =>
+                {
+                    _capturing = false;
+                    if (!_exiting && !Dispatcher.HasShutdownStarted) SyncFromDisk();
+                };
+                inspector.Show();
+                shown = true;
+                inspector.Activate();
+                SetStatus("");
+                return;
+            }
             var overlay = new CaptureWindow(result.Image, result.Bounds, result.Mode, result.Windows, result.InitialRegion, isolated);
             if (!isolated) overlay.OutputCompleted += region => _lastRegion = new LastCaptureRegion(region, result.MonitorLayout);
             overlay.Closed += (_, _) =>

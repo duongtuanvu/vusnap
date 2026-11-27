@@ -10,13 +10,13 @@ public static class ShortcutHelper
         { "Select", "Text", "Pen", "Line", "Arrow", "Rectangle", "Ellipse", "Highlight", "Blur", "Invert", "Number", "Ruler", "Magnifier" };
 
     public static readonly string[] ActionIds =
-        { "Copy", "Confirm", "QuickSave", "SaveAs", "Undo", "Redo", "Delete", "SelectAll", "TogglePanel", "Duplicate", "Ratio", "Ocr" };
+        { "Copy", "Confirm", "QuickSave", "SaveAs", "Undo", "Redo", "Delete", "SelectAll", "TogglePanel", "Duplicate", "Ratio", "Ocr", "ColorInspect", "Barcode" };
 
     /// <summary>Các nút khác trên thanh tool (có thể bật/tắt hiển thị).</summary>
     public static readonly string[] BarExtraIds = { "Color", "Ratio", "Panel", "Redo", "Undo" };
 
     /// <summary>Các nút trên thanh lưu/đóng (theo thứ tự hiển thị).</summary>
-    public static readonly string[] ActionBarIds = { "Cancel", "SaveAs", "QuickSave", "Copy", "Confirm", "Ocr" };
+    public static readonly string[] ActionBarIds = { "Cancel", "SaveAs", "QuickSave", "Copy", "Confirm", "Ocr", "ColorInspect", "Barcode" };
 
     private static readonly HashSet<string> NamedKeys = new(Enum.GetNames<Key>(), StringComparer.OrdinalIgnoreCase);
 
@@ -25,7 +25,7 @@ public static class ShortcutHelper
         ["Select"] = "V", ["Text"] = "T", ["Pen"] = "P", ["Line"] = "L", ["Arrow"] = "A", ["Rectangle"] = "R",
         ["Ellipse"] = "E", ["Highlight"] = "H", ["Blur"] = "B", ["Invert"] = "I", ["Number"] = "N", ["Ruler"] = "M", ["Magnifier"] = "Z",
         ["Copy"] = "Ctrl+C", ["Confirm"] = "Enter", ["QuickSave"] = "Ctrl+S", ["SaveAs"] = "",
-        ["Undo"] = "Ctrl+Z", ["Redo"] = "Ctrl+Y", ["Delete"] = "Delete", ["SelectAll"] = "Ctrl+A", ["TogglePanel"] = "", ["Duplicate"] = "Ctrl+D", ["Ratio"] = "", ["Ocr"] = "",
+        ["Undo"] = "Ctrl+Z", ["Redo"] = "Ctrl+Y", ["Delete"] = "Delete", ["SelectAll"] = "Ctrl+A", ["TogglePanel"] = "", ["Duplicate"] = "Ctrl+D", ["Ratio"] = "", ["Ocr"] = "", ["ColorInspect"] = "", ["Barcode"] = "",
     };
 
     /// <summary>Các tool theo thứ tự người dùng đã sắp xếp (tool chưa có trong danh sách thì xếp tiếp theo thứ tự mặc định).</summary>

@@ -47,3 +47,8 @@ MIT. See [LICENSE](LICENSE) for the original copyright of Tokisaki Nino and the 
 ## Offline OCR (v0.4.0)
 
 Select a screenshot region and press **OCR**. Choose an available engine/language, then Recognize. Windows OCR uses installed Windows OCR language packs. For reliable Vietnamese or mixed Vietnamese/English, install Tesseract OCR into the standard Program Files/Tesseract-OCR directory with `vie.traineddata` and `eng.traineddata` in its `tessdata` folder. VuSnap only exposes installed languages; it never downloads models or executes a program found via PATH. Recognition uses memory/stdin, not temporary screenshot files. Copy selected text or all results. No automatic clipboard write, network upload or history. Maximum 16 MP and 30-second timeout; Windows OCR may have a lower dimension limit. OCR results require review.
+
+## Color Picker and QR / Barcode (v0.4.3)
+
+- Choose **Screen color picker** in the capture modes (or tray menu) and capture the monitor under the cursor. The inspector displays a frozen image; hover to sample, click to lock, arrow keys move one pixel, and copy HEX/RGB/HSV individually. Resume to unlock. This is not continuous live desktop capture.
+- In the screenshot editor, select the area and press **RGB** to inspect exported pixels or **QR** to decode a single QR/barcode from the rendered selection. ZXing.Net runs locally. Choose a tight region for tiny codes; max 12 MP and 8192 px per dimension. Closing the result cancels publication; an in-flight synchronous decode finishes in the worker before another starts. QR data is plain text, never automatically opened or copied. Supported formats include QR, Data Matrix, Aztec, PDF417, Code128/39, EAN/UPC, ITF and Codabar.

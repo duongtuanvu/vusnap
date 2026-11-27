@@ -36,3 +36,8 @@
 ## [0.4.0] - Unreleased
 
 - Local OCR dialog, installed Windows OCR language packs and optional installed Tesseract eng/vie/bilingual engine, cancellation and image/output limits.
+
+## [0.4.3] - Unreleased
+
+- Screen snapshot and selected-image color inspector with pixel loupe, keyboard sampling, HEX/RGB/HSV and explicit clipboard actions.
+- Local QR and common barcode decoding via pinned ZXing.Net, bounded inputs and output, background execution and synthetic regression coverage.

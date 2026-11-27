@@ -21,7 +21,7 @@ public static class SettingsService
     public static bool Validate(AppSettings? s)
     {
         if (s is null || !In(s.Language, "en", "vi") || !In(s.Theme, "Light", "Dark", "System") ||
-            !In(s.DefaultCaptureMode, "Region", "Monitor", "Desktop", "ActiveWindow", "WindowPicker", "Repeat", "WindowHover") || s.CaptureDelaySeconds is not (0 or 3 or 5 or 10) ||
+            !In(s.DefaultCaptureMode, "Region", "Monitor", "Desktop", "ActiveWindow", "WindowPicker", "Repeat", "WindowHover", "ColorPicker") || s.CaptureDelaySeconds is not (0 or 3 or 5 or 10) ||
             !In(s.DefaultFormat, "PNG", "JPG") || !In(s.ToolbarPosition, "Top", "Bottom", "Left", "Right") ||
             !In(s.GridType, "Lines", "Dots") || s.GridSize is < 5 or > 100 ||
             !Between(s.OutlineOpacity, 0.1, 1) || !Between(s.DefaultThickness, 1, 40) ||
