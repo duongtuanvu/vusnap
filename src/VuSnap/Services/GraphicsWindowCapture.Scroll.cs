@@ -185,7 +185,7 @@ public static partial class GraphicsWindowCapture
         Report("scroll.finishing", true);
         using var bitmap = stitcher.Compose();
         token.ThrowIfCancellationRequested();
-        var data = bitmap.LockBits(new SD.Rectangle(0,0,bitmap.Width,bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        var data = bitmap.LockBits(new SD.Rectangle(0,0,bitmap.Width,bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         try
         {
             if (data.Stride <= 0) throw new CaptureException("ERR_SCROLL_004");
