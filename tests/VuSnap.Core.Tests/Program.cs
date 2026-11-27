@@ -1,3 +1,4 @@
+using System.IO;
 using VuSnap.Core;
 using VuSnap.Models;
 using VuSnap.Services;
