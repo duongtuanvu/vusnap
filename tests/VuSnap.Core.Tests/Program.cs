@@ -258,6 +258,17 @@ try
         try { LocalBarcodeService.DecodeAsync(image,cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
         catch(OperationCanceledException) { }
     });
+    Test("OCR layout restores rows and columns from unordered boxes", () =>
+    {
+        var words = new[] { new OcrWord("PASS",160,42,32,16), new OcrWord("Build",0,42,40,16),
+            new OcrWord("Status",160,0,48,16),new OcrWord("Task",0,0,32,16) };
+        var lines=OcrLayout.Format(words).Split(Environment.NewLine,StringSplitOptions.RemoveEmptyEntries);
+        Check(lines.Length==2 && lines[0].StartsWith("Task") && lines[0].IndexOf("Status",StringComparison.Ordinal)==20);
+        Check(lines[1].StartsWith("Build") && lines[1].IndexOf("PASS",StringComparison.Ordinal)==20);
+        Check(OcrLayout.Format(Array.Empty<OcrWord>())=="");
+        Check(OcrLayout.ParseTsv("5\\t1\\t1\\t1\\t1\\t1\\t0\\t0\\t32\\t16\\t90\\tViệt".Replace("\\t","\t"))=="Việt");
+        Check(new OcrOption("windows","en-US","Windows English").ToString()=="Windows English");
+    });
 }
 finally { try { Directory.Delete(folder, true); } catch { } }
 return failures == 0 ? 0 : 1;

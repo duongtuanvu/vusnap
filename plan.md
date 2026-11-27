@@ -2,7 +2,7 @@
 
 > Single source of truth for development scope, implementation progress and acceptance.
 > Updated: 2026-11-27 (Asia/Bangkok).
-> Current merged application version: **0.4.0**. CI verifies packaging without uploading artifacts; preview is manual. No public release/tag has been verified.
+> Current merged application version: **0.4.3**. CI verifies packaging without uploading artifacts; preview is manual. No public release/tag has been verified.
 
 ## Working agreement
 
@@ -107,9 +107,10 @@ Owner reports WGC works on Windows; detailed acceptance remains open. [PR #5](ht
 
 ## v0.4.3 — Color Picker & QR Scanner
 
-- [ ] Sample screenshot pixels and standalone screen color picker; HEX/RGB/HSV with copy.
-- [ ] Decode QR and common barcodes locally; display text, never auto-open decoded URLs.
-- [ ] Regression tests, CI and merge.
+- [x] Sample screenshot pixels and standalone screen color picker; HEX/RGB/HSV with copy.
+- [x] Decode QR and common barcodes locally; display text, never auto-open decoded URLs.
+- [x] Regression tests, CI and merge. PR #7, CI 45973913959, merge a5d29b4.
+- [ ] Manual Windows acceptance.
 
 Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the current roadmap by owner request. Do not implement them without a new request.
 
@@ -172,3 +173,9 @@ Implement v0.4.3 Color Picker & QR Scanner, then evaluate v0.5.0. WGC and OCR me
 - CI runs on pull requests, main pushes and explicit dispatch; no automatic feature-branch duplicate run and no artifact upload. PR packaging remains a verification gate without storing binaries.
 - Preview build is manual, defaults to portable only, with optional installer and one-day artifact retention. Release remains tag-triggered; do not create tags merely to test.
 - Existing artifacts are not deleted automatically. Record CI evidence and merge only after required checks pass.
+
+### Post-v0.4.3 feedback
+
+- [ ] Apply approved icon in app header, remove three background auras, active controls white text.
+- [ ] Circular hover-only pixel loupe, hide immediately on drag.
+- [ ] OCR spatial row/column reconstruction, bilingual preference, readable language selector and responsive toolbar; verify on owner screenshot.

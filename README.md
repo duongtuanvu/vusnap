@@ -52,3 +52,7 @@ Select a screenshot region and press **OCR**. Choose an available engine/languag
 
 - Choose **Screen color picker** in the capture modes (or tray menu) and capture the monitor under the cursor. The inspector displays a frozen image; hover to sample, click to lock, arrow keys move one pixel, and copy HEX/RGB/HSV individually. Resume to unlock. This is not continuous live desktop capture.
 - In the screenshot editor, select the area and press **RGB** to inspect exported pixels or **QR** to decode a single QR/barcode from the rendered selection. ZXing.Net runs locally. Choose a tight region for tiny codes; max 12 MP and 8192 px per dimension. Closing the result cancels publication; an in-flight synchronous decode finishes in the worker before another starts. QR data is plain text, never automatically opened or copied. Supported formats include QR, Data Matrix, Aztec, PDF417, Code128/39, EAN/UPC, ITF and Codabar.
+
+### OCR layout and language
+
+The OCR result is reconstructed from word bounding boxes, with monospaced output and horizontal scrolling for columns. Tesseract uses TSV positions and automatic page segmentation. If installed, Vietnamese + English is preferred; Windows English-only recognition cannot reliably recover Vietnamese accents. Install Tesseract eng/vie language data to use bilingual OCR. Layout is approximate plain text, not a pixel-identical document or editable Excel table.

@@ -34,7 +34,7 @@
 
   <!-- Typography -->
   <Style TargetType="TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    <!-- Inherit foreground from templated controls, including checked radio buttons. -->
     <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI"/>
   </Style>
   <Style x:Key="Section" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -99,7 +99,7 @@
       <Setter.Value>
         <ControlTemplate TargetType="Button">
           <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" TextElement.Foreground="{TemplateBinding Foreground}"/>
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="Bd" Property="Opacity" Value="0.92"/></Trigger>
@@ -296,7 +296,7 @@
               </ToggleButton.Template>
             </ToggleButton>
             <ContentPresenter IsHitTestVisible="False" Margin="10,0,28,0" VerticalAlignment="Center" HorizontalAlignment="Left"
-                              Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                              Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                               TextElement.Foreground="{TemplateBinding Foreground}"/>
             <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
               <Border MinWidth="{Binding ActualWidth, ElementName=Toggle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,4,0,0" CornerRadius="10"
@@ -384,8 +384,8 @@
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/></Trigger>
             <Trigger Property="IsChecked" Value="True">
-              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource InputBrush}"/>
-              <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrandGradientBrush}"/>
+              <Setter Property="Foreground" Value="White"/>
               <Setter TargetName="Bd" Property="Effect">
                 <Setter.Value><DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.12" Color="#484C94"/></Setter.Value>
               </Setter>
@@ -440,8 +440,8 @@
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource PanelBrush}"/></Trigger>
             <Trigger Property="IsChecked" Value="True">
-              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
-              <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrandGradientBrush}"/>
+              <Setter Property="Foreground" Value="White"/>
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>

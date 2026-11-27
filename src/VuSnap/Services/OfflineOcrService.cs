@@ -9,7 +9,10 @@ using Windows.Globalization;
 
 namespace VuSnap.Services;
 
-public sealed record OcrOption(string Engine, string Language, string Display);
+public sealed record OcrOption(string Engine, string Language, string Display)
+{
+    public override string ToString() => Display;
+}
 public sealed class UtilityException(string code, Exception? inner = null) : Exception(code, inner)
 {
     public string Code { get; } = code;
@@ -100,7 +103,11 @@ public static class OfflineOcrService
         token.ThrowIfCancellationRequested();
         using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(pixels.AsBuffer(), BitmapPixelFormat.Bgra8, width, height, BitmapAlphaMode.Ignore);
         var result = await engine.RecognizeAsync(bitmap).AsTask(token).ConfigureAwait(false);
-        return string.Join(Environment.NewLine, result.Lines.Select(x => x.Text));
+        return OcrLayout.Format(result.Lines.SelectMany(line => line.Words.Select(word =>
+        {
+            var box = word.BoundingRect;
+            return new OcrWord(word.Text,box.X,box.Y,box.Width,box.Height);
+        })));
     }
 
     private static async Task<string> TesseractAsync(BitmapSource image, string language, CancellationToken token)
@@ -121,13 +128,13 @@ public static class OfflineOcrService
             WorkingDirectory = Path.GetDirectoryName(exe)!
         };
         start.Environment.Remove("TESSDATA_PREFIX");
-        foreach (var arg in new[] {"stdin","stdout","--tessdata-dir",Path.Combine(start.WorkingDirectory,"tessdata"),"-l",language,"--oem","1","--psm","6"})
+        foreach (var arg in new[] {"stdin","stdout","--tessdata-dir",Path.Combine(start.WorkingDirectory,"tessdata"),"-l",language,"--oem","1","--psm","3","-c","preserve_interword_spaces=1","tsv"})
             start.ArgumentList.Add(arg);
         using var process = Process.Start(start) ?? throw new UtilityException("ERR_OCR_004");
         using var registration = token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch { } });
         try
         {
-            var output = ReadBoundedAsync(process.StandardOutput, MaxText, token);
+            var output = ReadBoundedAsync(process.StandardOutput, 8_000_000, token);
             var error = ReadBoundedAsync(process.StandardError, 16384, token);
             try { await input.CopyToAsync(process.StandardInput.BaseStream, token).ConfigureAwait(false); }
             finally { process.StandardInput.Close(); }
@@ -135,7 +142,7 @@ public static class OfflineOcrService
             await Task.WhenAll(output, error).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (process.ExitCode != 0 || output.Result is null) throw new UtilityException("ERR_OCR_004");
-            return output.Result;
+            return OcrLayout.ParseTsv(output.Result);
         }
         finally { try { if (!process.HasExited) process.Kill(true); } catch { } }
     }
