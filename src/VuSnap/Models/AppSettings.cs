@@ -11,6 +11,8 @@ public sealed class AppSettings
     public string SaveDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VuSnap");
     public bool CopyAfterCapture { get; set; } = true;    // copy thêm vào clipboard khi lưu file
     public string DefaultFormat { get; set; } = "PNG";
+    public string DefaultCaptureMode { get; set; } = "Region";
+    public int CaptureDelaySeconds { get; set; }
 
     // ── Hệ thống ──
     public bool StartWithWindows { get; set; } = false;       // khởi động cùng Windows

@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private AppSettings _settings = SettingsService.Load();
     private bool _loading;
     private bool _capturing;
+    private CancellationTokenSource? _captureCancellation;
+    private LastCaptureRegion? _lastRegion;
     private readonly Dictionary<string, TextBox> _scBoxes = new();
     private readonly TrayService _tray;
     private bool _exiting, _balloonShown;
@@ -40,6 +42,7 @@ public partial class MainWindow : Window
 
     private void ExitApp()
     {
+        _captureCancellation?.Cancel();
         _exiting = true;
         Close();
         Application.Current.Shutdown();
@@ -63,6 +66,7 @@ public partial class MainWindow : Window
         _tray = new TrayService();
         _tray.OpenRequested += ShowFromTray;
         _tray.CaptureRequested += StartCapture;
+        _tray.ModeRequested += mode => StartCaptureMode(mode, _settings.CaptureDelaySeconds);
         _tray.DonateRequested += () => Donate_Click(this, new RoutedEventArgs());
         _tray.ExitRequested += ExitApp;
         Loc.Lang = _settings.Language; _tray.SetTexts();
@@ -77,7 +81,7 @@ public partial class MainWindow : Window
             MemoryTrim.Schedule();
             if (!_balloonShown) { _balloonShown = true; _tray.ShowBalloon(Loc.T("tray.balloon")); }
         };
-        Closed += (_, _) => { UnregisterHotkey(); _tray.Dispose(); };
+        Closed += (_, _) => { _exiting = true; _captureCancellation?.Cancel(); UnregisterHotkey(); _tray.Dispose(); };
     }
 
     // ───────────────────────── Hotkey toàn cục ─────────────────────────
@@ -168,36 +172,91 @@ public partial class MainWindow : Window
 
     // ───────────────────────── Chụp ─────────────────────────
 
-    private async void StartCapture()
+    private void StartCapture() => StartCaptureMode(Enum.Parse<CaptureMode>(_settings.DefaultCaptureMode), _settings.CaptureDelaySeconds);
+
+    private void CaptureNow_Click(object sender, RoutedEventArgs e) => StartCapture();
+    private void CancelCapture_Click(object sender, RoutedEventArgs e) => _captureCancellation?.Cancel();
+
+    private void CapturePreferences_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (_capturing) return; // đang có overlay, bỏ qua hotkey bấm lần nữa
+        if (_loading || CaptureModeBox?.SelectedItem is not ComboBoxItem { Tag: string mode } ||
+            CaptureDelayBox?.SelectedItem is not ComboBoxItem { Tag: string delay }) return;
+        _settings.DefaultCaptureMode = mode;
+        _settings.CaptureDelaySeconds = int.Parse(delay, CultureInfo.InvariantCulture);
+        SaveSettings();
+    }
+
+    private async void StartCaptureMode(CaptureMode mode, int delay)
+    {
+        if (_capturing) { _captureCancellation?.Cancel(); return; }
         _capturing = true;
+        using var cancellation = new CancellationTokenSource();
+        _captureCancellation = cancellation;
+        var token = cancellation.Token;
+        var priorState = WindowState;
+        bool shown = false;
         try
         {
-            // Ẩn cửa sổ chính trước khi chụp để nó không lọt vào ảnh.
             if (IsVisible && WindowState != WindowState.Minimized)
             {
                 WindowState = WindowState.Minimized;
-                await Task.Delay(250);
+                await Task.Delay(250, token);
             }
-            var (image, screen) = ScreenCaptureService.CaptureMonitorAtCursor();
-            var overlay = new CaptureWindow(image, screen.Bounds);
-            // Chụp bằng hotkey nên để cửa sổ chính ở trạng thái thu nhỏ, không giành focus của app đang cần dán ảnh vào.
+            CancelCaptureButton.IsEnabled = true;
+            for (int remaining = delay; remaining > 0; remaining--)
+            {
+                SetStatus(Loc.F("capture.countdown", remaining));
+                await Task.Delay(1000, token);
+            }
+            token.ThrowIfCancellationRequested();
+            // The main window may have been restored from the tray during the delay.
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                WindowState = WindowState.Minimized;
+                await Task.Delay(250, token);
+            }
+            var request = new CaptureRequest(mode, delay, _lastRegion);
+            var result = await Task.Run(() => ScreenCaptureService.Capture(request, token), token);
+            token.ThrowIfCancellationRequested();
+            var overlay = new CaptureWindow(result.Image, result.Bounds, result.Mode, result.Windows, result.InitialRegion);
+            overlay.OutputCompleted += region => _lastRegion = new LastCaptureRegion(region, result.MonitorLayout);
             overlay.Closed += (_, _) =>
             {
                 _capturing = false;
                 if (!_exiting && !Dispatcher.HasShutdownStarted) SyncFromDisk();
-                MemoryTrim.Schedule();
             };
             overlay.Show();
+            shown = true;
             overlay.Activate();
+            SetStatus("");
         }
+        catch (OperationCanceledException) { if (!_exiting) SetStatus(""); }
         catch (Exception ex)
         {
-            _capturing = false;
-            WindowState = WindowState.Normal;
-            ErrorLog.Write(ErrorCodes.Capture, ex);
-            SetStatus($"[{ErrorCodes.Capture}] " + Loc.T("status.captureError"));
+            var code = ex is CaptureException ce ? ce.Code : ErrorCodes.Capture;
+            ErrorLog.Write(code, ex);
+            if (!_exiting)
+            {
+                var key = code switch
+                {
+                    "ERR_CAPTURE_004" => "capture.noWindow",
+                    "ERR_CAPTURE_005" => "capture.noRepeat",
+                    "ERR_CAPTURE_003" => "capture.tooLarge",
+                    _ => "status.captureError"
+                };
+                ShowFromTray();
+                SetStatus($"[{code}] " + Loc.T(key));
+            }
+        }
+        finally
+        {
+            _captureCancellation = null;
+            if (!_exiting)
+            {
+                CancelCaptureButton.IsEnabled = false;
+                if (!shown && IsVisible && WindowState == WindowState.Minimized) WindowState = priorState;
+            }
+            if (!shown) _capturing = false;
         }
     }
 
@@ -216,6 +275,8 @@ public partial class MainWindow : Window
         ApplyTheme(_settings.Theme);
         ApplyLanguage();
 
+        SelectByTag(CaptureModeBox, _settings.DefaultCaptureMode);
+        SelectByTag(CaptureDelayBox, _settings.CaptureDelaySeconds.ToString(CultureInfo.InvariantCulture));
         SelectByTag(LangBox, _settings.Language);
         SelectByTag(ThemeBox, _settings.Theme);
         HotkeyBox.Text = ShortcutHelper.Pretty(_settings.Hotkey);
@@ -282,6 +343,12 @@ public partial class MainWindow : Window
         LangLabel.Text = Loc.T("gen.language");
         ThemeLabel.Text = Loc.T("gen.theme");
         foreach (ComboBoxItem item in ThemeBox.Items) item.Content = Loc.T("theme." + item.Tag);
+        CaptureModeLabel.Text = Loc.T("capture.mode");
+        CaptureDelayLabel.Text = Loc.T("capture.delay");
+        foreach (ComboBoxItem item in CaptureModeBox.Items) item.Content = Loc.T("capture." + item.Tag);
+        foreach (ComboBoxItem item in CaptureDelayBox.Items) item.Content = item.Tag + " s";
+        CaptureNowButton.Content = Loc.T("btn.capture");
+        CancelCaptureButton.Content = Loc.T("capture.cancel");
         HotkeyLabel.Text = Loc.T("gen.hotkey");
         HotkeyBox.ToolTip = Loc.T("gen.hotkeyHint");
         ResetButton.Content = Loc.T("gen.reset");

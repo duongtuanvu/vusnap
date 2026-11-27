@@ -8,6 +8,10 @@ A lightweight Windows screenshot and annotation tool built with C#, WPF and .NET
 
 [![CI](https://github.com/duongtuanvu/vusnap/actions/workflows/ci.yml/badge.svg)](https://github.com/duongtuanvu/vusnap/actions/workflows/ci.yml)
 
+## Advanced capture
+
+Choose the capture mode and delay in the main window, or use the tray menu. Repeat reuses the last successfully exported region in the current session when monitor layout is unchanged. Window modes capture visible desktop pixels, including occlusions; they do not capture hidden window content. Press the capture hotkey again to cancel the countdown. See [third-party reuse](docs/THIRD_PARTY.md).
+
 ## Features
 
 - Global capture shortcut: Alt+Shift+S; region selection, resizing, loupe, grid and aspect ratio.

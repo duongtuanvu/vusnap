@@ -78,6 +78,8 @@ public sealed class TrayService : IDisposable
 
     public event Action? OpenRequested;
     public event Action? CaptureRequested;
+    public event Action<VuSnap.Models.CaptureMode>? ModeRequested;
+    private readonly System.Windows.Forms.ToolStripMenuItem _modes = new();
     public event Action? DonateRequested;
     public event Action? ExitRequested;
 
@@ -91,6 +93,13 @@ public sealed class TrayService : IDisposable
         _exit.Click += (_, _) => ExitRequested?.Invoke();
         menu.Items.Add(_open);
         menu.Items.Add(_capture);
+        foreach (var mode in Enum.GetValues<VuSnap.Models.CaptureMode>())
+        {
+            var item = new System.Windows.Forms.ToolStripMenuItem { Tag = mode };
+            item.Click += (_, _) => ModeRequested?.Invoke(mode);
+            _modes.DropDownItems.Add(item);
+        }
+        menu.Items.Add(_modes);
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add(_exit);
 
@@ -104,6 +113,8 @@ public sealed class TrayService : IDisposable
     {
         _open.Text = Loc.T("tray.open");
         _capture.Text = Loc.T("tray.capture");
+        _modes.Text = Loc.T("capture.mode");
+        foreach (System.Windows.Forms.ToolStripMenuItem item in _modes.DropDownItems) item.Text = Loc.T("capture." + item.Tag);
         _donate.Text = "♥  " + Loc.T("about.donate");
         _exit.Text = Loc.T("tray.exit");
         _icon.Text = AppInfo.TitleWithVersion;

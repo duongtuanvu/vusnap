@@ -221,6 +221,18 @@
           <TextBox x:Name="HotkeyBox" Grid.Column="5" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Arrow" TextAlignment="Center" PreviewKeyDown="HotkeyBox_PreviewKeyDown"/>
           <Button x:Name="ResetButton" Grid.Column="7" Margin="0" Click="Reset_Click"/>
         </Grid>
+        <WrapPanel Margin="0,12,0,0">
+          <TextBlock x:Name="CaptureModeLabel" Style="{StaticResource SmallLabel}"/>
+          <ComboBox x:Name="CaptureModeBox" Width="180" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">
+            <ComboBoxItem Tag="Region"/><ComboBoxItem Tag="Monitor"/><ComboBoxItem Tag="Desktop"/><ComboBoxItem Tag="ActiveWindow"/><ComboBoxItem Tag="WindowPicker"/><ComboBoxItem Tag="Repeat"/>
+          </ComboBox>
+          <TextBlock x:Name="CaptureDelayLabel" Style="{StaticResource SmallLabel}"/>
+          <ComboBox x:Name="CaptureDelayBox" Width="100" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">
+            <ComboBoxItem Tag="0"/><ComboBoxItem Tag="3"/><ComboBoxItem Tag="5"/><ComboBoxItem Tag="10"/>
+          </ComboBox>
+          <Button x:Name="CaptureNowButton" Click="CaptureNow_Click" Margin="0,0,8,0"/>
+          <Button x:Name="CancelCaptureButton" Click="CancelCapture_Click" IsEnabled="False"/>
+        </WrapPanel>
         <TextBlock x:Name="StatusText" Style="{StaticResource Muted}" Margin="0,10,0,0" Visibility="Collapsed"/>
       </StackPanel>
     </Border>

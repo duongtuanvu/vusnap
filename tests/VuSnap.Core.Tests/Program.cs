@@ -133,6 +133,51 @@ try
         Check(wins == 1 && File.ReadAllBytes(target).Length == 1);
         Check(!Directory.EnumerateFiles(folder, ".vusnap-*.tmp").Any());
     });
+    Test("capture geometry negative coordinates and mixed scale", () =>
+    {
+        var bounds = new System.Drawing.Rectangle(-1920, -120, 1920, 1080);
+        var selected = CaptureGeometry.SelectionPixels(bounds, 10, 20, 100, 80, 1.5, 1.5);
+        Check(selected == new System.Drawing.Rectangle(-1905, -90, 150, 120));
+        Check(CaptureGeometry.SelectionPixels(bounds, 0, 0, 1280, 720, 1.5, 1.5) == bounds);
+        Throws(() => CaptureGeometry.SelectionPixels(bounds, double.NaN, 0, 1, 1, 1, 1));
+    });
+    Test("monitor layout and desktop bounds", () =>
+    {
+        var left = new System.Drawing.Rectangle(-1920, 0, 1920, 1080);
+        var right = new System.Drawing.Rectangle(0, -200, 2560, 1440);
+        var layout = new[] { left, right };
+        Check(CaptureGeometry.DesktopBounds(layout) == new System.Drawing.Rectangle(-1920, -200, 4480, 1440));
+        Check(CaptureGeometry.SameLayout(layout, new[] { right, left }));
+        Check(!CaptureGeometry.SameLayout(layout, new[] { right }));
+        Check(CaptureGeometry.EditorBounds(new System.Drawing.Rectangle(-100, 10, 80, 80), layout) == left);
+        Check(CaptureGeometry.IsCovered(new System.Drawing.Rectangle(-100, 10, 200, 80), layout));
+        Check(!CaptureGeometry.IsCovered(new System.Drawing.Rectangle(-100, -100, 200, 80), layout));
+    });
+    Test("window hit order and boundaries", () =>
+    {
+        var top = new System.Drawing.Rectangle(-10, -10, 20, 20);
+        var bottom = new System.Drawing.Rectangle(-20, -20, 50, 50);
+        Check(CaptureGeometry.Hit(new[] { top, bottom }, new System.Drawing.Point(0, 0)) == top);
+        Check(CaptureGeometry.Hit(new[] { top, bottom }, new System.Drawing.Point(10, 10)) == bottom);
+        Check(CaptureGeometry.Hit(new[] { top, bottom }, new System.Drawing.Point(50, 50)) is null);
+    });
+    Test("capture validation and cancellation", () =>
+    {
+        CaptureGeometry.Validate(new System.Drawing.Rectangle(-3840, 0, 7680, 2160));
+        Throws(() => CaptureGeometry.Validate(new System.Drawing.Rectangle(0, 0, 0, 1)));
+        Throws(() => CaptureGeometry.Validate(new System.Drawing.Rectangle(0, 0, 10000, 10000)));
+        Throws(() => CaptureGeometry.Validate(new System.Drawing.Rectangle(int.MaxValue, 0, 2, 1)));
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        try { ScreenCaptureService.Capture(new CaptureRequest(CaptureMode.Region), cts.Token); throw new Exception("Expected cancellation"); }
+        catch (OperationCanceledException) { }
+        var s = new AppSettings { SaveDirectory = folder, DefaultCaptureMode = "Desktop", CaptureDelaySeconds = 5 };
+        Check(SettingsService.Validate(s));
+        SettingsService.Save(s);
+        Check(SettingsService.Load().DefaultCaptureMode == "Desktop" && SettingsService.Load().CaptureDelaySeconds == 5);
+        s.CaptureDelaySeconds = 4; Check(!SettingsService.Validate(s));
+        s.CaptureDelaySeconds = 0; s.DefaultCaptureMode = "invalid"; Check(!SettingsService.Validate(s));
+    });
 }
 finally { try { Directory.Delete(folder, true); } catch { } }
 return failures == 0 ? 0 : 1;
