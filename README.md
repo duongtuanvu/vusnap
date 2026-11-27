@@ -1,6 +1,6 @@
 # VuSnap
 
-![VuSnap logo](docs/images/logo.svg)
+![VuSnap logo](docs/images/logo.png)
 
 A lightweight Windows screenshot and annotation tool built with C#, WPF and .NET 10. VuSnap is independently maintained by vudt and based on [NinoMark v0.5.0](https://github.com/TokisakiNinoVn/NinoMark/commit/bab3f157d21a0ae52b2a966570c492b5f4c80da7).
 
