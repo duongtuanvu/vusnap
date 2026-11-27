@@ -10,9 +10,12 @@ namespace VuSnap.Windows;
 
 public partial class CaptureWindow
 {
+    public System.Drawing.Rectangle? ScrollSelection { get; private set; }
+
     private void InitializeCaptureMode()
     {
         if (_captureMode == CaptureMode.Region) return;
+        if (_captureMode == CaptureMode.Scrolling) { HintText.Text = Loc.T("scroll.selectHint"); return; }
         if (_pickingWindow) { HintText.Text = Loc.T("capture.pickHint"); return; }
         if (Root.ActualWidth <= 0 || Root.ActualHeight <= 0) return;
         SetInitialRegion(_initialRegion is { } region ? ToOverlayRect(region) : new Rect(0, 0, Root.ActualWidth, Root.ActualHeight));

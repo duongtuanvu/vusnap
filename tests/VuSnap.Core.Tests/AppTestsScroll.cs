@@ -10,6 +10,7 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using VuSnap.Core;
 using VuSnap.Models;
+using VuSnap.Services;
 
 namespace VuSnap.Tests
 {
@@ -30,6 +31,22 @@ namespace VuSnap.Tests
             run("a floating button is not repeated down the image", Floating);
             run("scroll validates bounds, duplicates and cancellation", Limits);
             run("scroll preserves fixed header and footer", FixedEdges);
+            run("scroll crop and mixed-DPI pointer guards", Geometry);
+        }
+
+        static void Geometry()
+        {
+            var crop=new Rectangle(50,100,800,600);
+            ScrollCaptureGeometry.ValidateCrop(1000,800,crop);
+            try { ScrollCaptureGeometry.ValidateCrop(1000,800,new Rectangle(500,100,800,600)); throw new Exception("Expected crop bounds failure"); }
+            catch(CaptureException ex){ Check(ex.Code=="ERR_SCROLL_001","crop code"); }
+            try { ScrollCaptureGeometry.ValidateSource(8192,8192); throw new Exception("Expected source limit"); }
+            catch(CaptureException ex){ Check(ex.Code=="ERR_SCROLL_005","source code"); }
+            var bounds=new Rectangle(-1500,200,1500,1200);
+            Check(ScrollCaptureGeometry.IsPointerInCrop(bounds,crop,1000,800,new Point(-1425,350)),"negative-origin scaled top-left");
+            Check(!ScrollCaptureGeometry.IsPointerInCrop(bounds,crop,1000,800,new Point(-1426,350)),"outside crop");
+            Check(!ScrollCaptureGeometry.IsPointerInCrop(bounds,crop,1000,800,new Point(0,350)),"outside window");
+            Check(SettingsService.Validate(new AppSettings{ DefaultCaptureMode="Scrolling" }),"scroll mode persists");
         }
 
         static void Limits()

@@ -1,6 +1,6 @@
 # VuSnap
 
-![VuSnap logo](docs/images/logo.svg)
+![VuSnap logo](docs/images/logo.png)
 
 Ứng dụng chụp màn hình và chú thích ảnh trên Windows, sử dụng C#, WPF và .NET 10. Phát triển độc lập bởi vudt, dựa trên [NinoMark v0.5.0](https://github.com/TokisakiNinoVn/NinoMark/commit/bab3f157d21a0ae52b2a966570c492b5f4c80da7).
 
@@ -31,3 +31,7 @@ dotnet run --project src/VuSnap/VuSnap.csproj
 ## Giấy phép
 
 MIT. Giữ nguyên thông báo bản quyền tác giả gốc Tokisaki Nino và bổ sung vudt trong [LICENSE](LICENSE). VuSnap sử dụng logo và icon riêng; lịch sử nguồn tại [docs/UPSTREAM_CHANGELOG.md](docs/UPSTREAM_CHANGELOG.md).
+
+## Chụp cuộn (v0.5.0)
+
+Chọn **Chụp cuộn** → chọn cửa sổ WGC → kéo vùng nội dung cần cuộn trên ảnh xem trước. Kích hoạt cửa sổ nguồn rồi cuộn xuống từ từ, hoặc bật **Tự cuộn** và đưa con trỏ vào vùng chọn. Tự cuộn dừng khi không khớp ảnh; nếu chuyển ứng dụng hoặc đưa chuột ra ngoài, lệnh cuộn tạm dừng. Không di chuyển/đổi kích thước cửa sổ trong phiên. Bấm **Hoàn tất** để xem ảnh dài, copy hoặc lưu PNG/JPEG. Hủy bằng nút Hủy hoặc phím tắt chụp. Giới hạn ảnh kết quả 24 MP, tối đa 16.384 pixel chiều dài; phiên tối đa 180 giây. Chỉ ghép phần khớp, không đoán phần thiếu. Kết quả phụ thuộc nội dung và ứng dụng; nghiệm thu Windows thực tế còn mở.

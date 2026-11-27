@@ -56,3 +56,12 @@ Select a screenshot region and press **OCR**. Choose an available engine/languag
 ### OCR layout and language
 
 The OCR result is reconstructed from word bounding boxes, with monospaced output and horizontal scrolling for columns. Tesseract uses TSV positions and automatic page segmentation. If installed, Vietnamese + English is preferred; Windows English-only recognition cannot reliably recover Vietnamese accents. Install Tesseract eng/vie language data to use bilingual OCR. Layout is approximate plain text, not a pixel-identical document or editable Excel table.
+
+## Scrolling capture (v0.5.0)
+
+1. Select **Scrolling capture** in the main window or tray; select the target window in the WGC picker.
+2. Drag a rectangle over the scrollable content in the frozen preview, excluding menus/scrollbars where possible. Release to start the visible control window.
+3. Activate the source window and scroll down slowly (manual), or click **Auto scroll**, activate the source, and hold the pointer inside the selected area. Auto pauses when the target is not foreground or pointer/keyboard guards fail; switch to manual to recover from a lost match. Do not resize or move the source during a session.
+4. Click **Finish** to preview the verified stitched prefix, then explicitly save PNG/JPEG or copy. Cancel or the capture hotkey discards an in-progress session. The app does not scroll back to the start automatically.
+
+Continuous WGC isolates the selected window (no desktop fallback), uses one frame pool and a single worker. Matching uses Stackshot's MIT stitcher; frame limit 8 MP/4096 px per side, source window 16 MP/8192 px, result 24 MP/16384 px, session 180 seconds. Static/repeated/animated content may be ambiguous; unmatched frames are not blindly appended. Auto stops after four steps without growth; this is not proof of page end. No image data is uploaded or written before explicit save/copy. Windows runtime acceptance (Chrome, Edge, Excel, Explorer, fractional DPI and protected content) remains open.

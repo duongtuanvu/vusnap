@@ -186,6 +186,7 @@ public partial class CaptureWindow : Window
         _style = Presets.StrokeIds.Contains(_cfg.DefaultStroke) ? _cfg.DefaultStroke : "Solid";
         _ratioId = Presets.RatioIds.Contains(_cfg.DefaultAspect) ? _cfg.DefaultAspect : "Free";
         _ratio = Presets.RatioValue(_ratioId);
+        if (mode == CaptureMode.Scrolling) { _ratioId = "Free"; _ratio = null; }
         _arrow = Presets.ArrowIds.Contains(_cfg.DefaultArrow) ? _cfg.DefaultArrow : "Filled";
         _cornersOnly = _cfg.DefaultCorners;
         _gridOn = _cfg.ShowGrid;
@@ -393,6 +394,20 @@ public partial class CaptureWindow : Window
         }
         _hasSel = true;
         SizeBadge.Visibility = Visibility.Collapsed;
+        if (_captureMode == CaptureMode.Scrolling)
+        {
+            var crop = SelectedPixels();
+            try { ScrollCaptureGeometry.ValidateCrop(_source.PixelWidth, _source.PixelHeight, crop); }
+            catch (CaptureException)
+            {
+                ClearSelection();
+                HintText.Text = "[ERR_SCROLL_001] " + Loc.T("scroll.invalidRegion");
+                return;
+            }
+            ScrollSelection = crop;
+            DialogResult = true;
+            return;
+        }
         ShowBars();
     }
 
