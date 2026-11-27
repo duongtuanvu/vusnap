@@ -121,7 +121,7 @@ Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the curre
 - [ ] Secure opaque redaction that permanently removes covered pixels from flattened exports; warn that pixelation is not secure redaction.
 - [ ] Beautifier: padding, backgrounds, shadows and corner radius.
 - [ ] PNG/JPEG/WebP export, target-size compression; evaluate PDF export.
-- [ ] Scrolling capture with overlap detection, stitch preview, duplicate rejection, cancellation and memory limits.
+- [x] Scrolling capture with overlap detection, stitch preview, duplicate rejection, cancellation and memory limits. Implemented and merged in PR #11; interactive acceptance remains open.
 - [ ] Image comparison, manual stitching and accessibility polish.
 - [ ] Test image quality, privacy, memory bounds, undo/redo and export failure; CI pass and merge.
 
@@ -166,7 +166,7 @@ Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the curre
 
 ## Next task
 
-Complete v0.5.0 scrolling capture (Stackshot MIT stitcher + continuous WGC, manual/auto, preview/export). Merge only after CI passes; run Windows acceptance separately. Other advanced editor tasks remain out of this increment.
+v0.5.0 scrolling capture merged after CI pass. Next: Windows interactive acceptance and owner-directed follow-up. Other advanced editor tasks remain out of this increment.
 
 ### GitHub Actions resource policy
 
@@ -183,5 +183,5 @@ Complete v0.5.0 scrolling capture (Stackshot MIT stitcher + continuous WGC, manu
 
 ### Scrolling capture acceptance
 
-- [ ] CI build, imported six Stackshot tests, VuSnap boundary/geometry regressions and packaging pass; record PR and merge.
+- [x] CI build, imported six Stackshot tests, VuSnap boundary/geometry regressions and packaging pass. [PR #11](https://github.com/duongtuanvu/vusnap/pull/11), [CI 46034609042](https://github.com/duongtuanvu/vusnap/actions/runs/46034609042), merge 1e906be.
 - [ ] Windows 10/11 manual: Chrome/Edge long page, sticky headers/footer, Excel/Explorer, repetitive rows, 125/150% DPI, short selections, scroll back/recover, no accidental wheel on other windows, cancel/close, preview PNG/JPEG/clipboard, source resize/close, memory and time limits.
