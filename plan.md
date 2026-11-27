@@ -95,16 +95,20 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 - [ ] Verify actual occluded-window capture, GPU compatibility and mixed DPI on Windows.
 - [ ] Regression tests, CI and merge.
 
-## v0.4.0 — OCR, Pin & History
+## v0.4.0 — Offline OCR
 
 - [ ] Offline OCR (evaluate Windows OCR and local alternatives; EN/VI support with explicit language availability).
 - [ ] Select/copy recognized text, confidence/empty-result handling and optional region OCR.
-- [ ] Pin screenshot as movable, resizable, always-on-top window with opacity and close controls.
-- [ ] Local capture history: thumbnails, date/search/filter, open/copy/delete.
-- [ ] Configurable history retention/size limits; opt-out and clear-history controls.
-- [ ] Standalone color picker (HEX/RGB/HSV), QR/barcode decoding where appropriate.
 - [ ] No cloud upload or telemetry by default; verify privacy and cleanup.
 - [ ] Tests, CI pass and merge.
+
+## v0.4.3 — Color Picker & QR Scanner
+
+- [ ] Sample screenshot pixels and standalone screen color picker; HEX/RGB/HSV with copy.
+- [ ] Decode QR and common barcodes locally; display text, never auto-open decoded URLs.
+- [ ] Regression tests, CI and merge.
+
+Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the current roadmap by owner request. Do not implement them without a new request.
 
 ## v0.5.0 — Advanced Editor & Scrolling Capture
 
@@ -158,4 +162,10 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 
 ## Next task
 
-Next feature increment: v0.3.1 WGC window capture. Runtime acceptance remains open for earlier increments.
+Finish v0.3.1 integration with the no-artifact CI policy. Owner reports WGC works on their Windows machine; detailed occlusion/GPU/DPI acceptance is not yet documented. Next implement v0.4.0 offline OCR, then v0.4.3 Color Picker & QR Scanner only.
+
+### GitHub Actions resource policy
+
+- CI runs on pull requests, main pushes and explicit dispatch; no automatic feature-branch duplicate run and no artifact upload. PR packaging remains a verification gate without storing binaries.
+- Preview build is manual, defaults to portable only, with optional installer and one-day artifact retention. Release remains tag-triggered; do not create tags merely to test.
+- Existing artifacts are not deleted automatically. Record CI evidence and merge only after required checks pass.

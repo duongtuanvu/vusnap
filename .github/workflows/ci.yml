@@ -2,13 +2,21 @@ name: CI
 
 on:
   push:
-    branches: [main, 'feat/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -18,45 +26,13 @@ jobs:
         run: dotnet restore VuSnap.sln
       - name: Build
         run: dotnet build VuSnap.sln -c Release --no-restore
-
       - name: Run core regression tests
         run: dotnet run --project tests/VuSnap.Core.Tests/VuSnap.Core.Tests.csproj -c Release
 
+  # Keep the existing installer verification gate on PRs, but never store CI artifacts.
   packaging:
-    runs-on: windows-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-      - name: Publish portable
-        run: dotnet publish src/VuSnap/VuSnap.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/self-contained
-      - name: Verify assets and build installer
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $source = (Resolve-Path out/self-contained).Path
-          if (!(Test-Path "$source/VuSnap.exe") -or !(Test-Path "$source/LICENSE")) { throw 'ERR_PACKAGE_MISSING_FILE' }
-          if ((Get-FileHash "$source/LICENSE").Hash -ne (Get-FileHash LICENSE).Hash) { throw 'ERR_PACKAGE_LICENSE' }
-          $icon = [IO.File]::ReadAllBytes((Resolve-Path src/VuSnap/Assets/app-fit.ico).Path)
-          if ([BitConverter]::ToUInt16($icon,2) -ne 1 -or [BitConverter]::ToUInt16($icon,4) -ne 7) { throw 'ERR_PACKAGE_ICON' }
-          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe'
-          if (!(Test-Path $iscc)) {
-            choco install innosetup -y --no-progress
-            if ($LASTEXITCODE -ne 0) { throw 'ERR_PACKAGE_INNO_INSTALL' }
-          }
-          $dist = Join-Path $PWD 'dist'
-          New-Item -ItemType Directory -Force $dist | Out-Null
-          $version = ([xml](Get-Content src/VuSnap/VuSnap.csproj -Raw)).Project.PropertyGroup.Version
-          & $iscc "/DAppVersion=$version" "/DSourceDir=$source" "/DOutputDir=$dist" installer/VuSnap.iss
-          if ($LASTEXITCODE -ne 0) { throw 'ERR_PACKAGE_INSTALLER' }
-          Compress-Archive -Path "$source/VuSnap.exe","$source/LICENSE" -DestinationPath "$dist/VuSnap-portable.zip"
-          if (!(Test-Path "$dist/VuSnap-$version-setup.exe")) { throw 'ERR_PACKAGE_INSTALLER_MISSING' }
-      - uses: actions/upload-artifact@v4
-        with:
-          name: VuSnap-ci-packages
-          path: dist/*
-          if-no-files-found: error
-          retention-days: 7
+    if: github.event_name != 'push'
+    uses: ./.github/workflows/package.yml
+    with:
+      upload: false
+      installer: true
