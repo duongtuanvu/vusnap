@@ -166,7 +166,7 @@ Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the curre
 
 ## Next task
 
-Implement v0.4.3 Color Picker & QR Scanner, then evaluate v0.5.0. WGC and OCR merged; detailed runtime acceptance remains open.
+Complete v0.5.0 scrolling capture (Stackshot MIT stitcher + continuous WGC, manual/auto, preview/export). Merge only after CI passes; run Windows acceptance separately. Other advanced editor tasks remain out of this increment.
 
 ### GitHub Actions resource policy
 
@@ -176,6 +176,12 @@ Implement v0.4.3 Color Picker & QR Scanner, then evaluate v0.5.0. WGC and OCR me
 
 ### Post-v0.4.3 feedback
 
-- [ ] Apply approved icon in app header, remove three background auras, active controls white text.
-- [ ] Circular hover-only pixel loupe, hide immediately on drag.
-- [ ] OCR spatial row/column reconstruction, bilingual preference, readable language selector and responsive toolbar; verify on owner screenshot.
+- [x] Apply approved icon in app header, remove three background auras, active controls white text. PR #10, merge 28e6a99, CI 45989857344.
+- [x] Circular hover-only pixel loupe, hide immediately on drag. PR #10.
+- [x] OCR spatial row/column reconstruction, bilingual preference, readable language selector and responsive toolbar. PR #10.
+- [ ] Verify feedback fixes and OCR against owner screenshots on Windows.
+
+### Scrolling capture acceptance
+
+- [ ] CI build, imported six Stackshot tests, VuSnap boundary/geometry regressions and packaging pass; record PR and merge.
+- [ ] Windows 10/11 manual: Chrome/Edge long page, sticky headers/footer, Excel/Explorer, repetitive rows, 125/150% DPI, short selections, scroll back/recover, no accidental wheel on other windows, cancel/close, preview PNG/JPEG/clipboard, source resize/close, memory and time limits.

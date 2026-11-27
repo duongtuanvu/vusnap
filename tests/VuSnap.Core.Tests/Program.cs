@@ -17,6 +17,7 @@ void Throws(Action action) { try { action(); } catch { return; } throw new Excep
 try
 {
     Directory.CreateDirectory(folder);
+    VuSnap.Tests.AppTestsScroll.Suite(Test);
     Test("history undo redo and branch", () =>
     {
         var h = new CommandHistory<int>(0, 2);

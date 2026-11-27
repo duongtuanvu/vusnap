@@ -29,7 +29,7 @@
           <Image Width="32" Height="32" Margin="0,0,10,0" Source="/Assets/app-logo.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
           <TextBlock Text="VuSnap" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
           <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="9,0,0,0" VerticalAlignment="Center">
-            <TextBlock x:Name="VersionBadge" Text="v0.4.3" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
+            <TextBlock x:Name="VersionBadge" Text="v0.5.0" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
           </Border>
         </StackPanel>
 
@@ -100,13 +100,14 @@
               </UniformGrid>
             </Border>
 
-            <!-- Secondary Capture Modes (All 8 real VuSnap modes reachable in 1 click) -->
+            <!-- Secondary capture modes -->
             <WrapPanel Margin="0,8,0,10" HorizontalAlignment="Center">
               <RadioButton x:Name="ModeDesktop" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="Desktop" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
               <RadioButton x:Name="ModeWindowPicker" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="WindowPicker" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
               <RadioButton x:Name="ModeWindowHover" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="WindowHover" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
               <RadioButton x:Name="ModeRepeat" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="Repeat" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
-              <RadioButton x:Name="ModeColorPicker" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="ColorPicker" Margin="0,0,0,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeColorPicker" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="ColorPicker" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeScrolling" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="Scrolling" Margin="0,0,0,5" Checked="ModeRadio_Checked"/>
             </WrapPanel>
 
             <!-- Delay -->

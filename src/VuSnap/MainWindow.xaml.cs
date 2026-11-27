@@ -257,6 +257,11 @@ public partial class MainWindow : Window
                 WindowState = WindowState.Minimized;
                 await Task.Delay(250, token);
             }
+            if (mode == CaptureMode.Scrolling)
+            {
+                await RunScrollingCaptureAsync(token);
+                return;
+            }
             var request = new CaptureRequest(mode, delay, _lastRegion);
             CaptureResult result;
             bool isolated = mode is CaptureMode.ActiveWindow or CaptureMode.WindowPicker;
@@ -322,6 +327,11 @@ public partial class MainWindow : Window
                     "ERR_WGC_004" => "wgc.failed",
                     "ERR_WGC_005" => "wgc.resized",
                     "ERR_WGC_006" => "wgc.failed",
+                    "ERR_SCROLL_001" => "scroll.invalidRegion",
+                    "ERR_SCROLL_002" => "scroll.targetChanged",
+                    "ERR_SCROLL_003" => "scroll.noFrame",
+                    "ERR_SCROLL_004" => "scroll.failed",
+                    "ERR_SCROLL_005" => "scroll.sourceLimit",
                     _ => "status.captureError"
                 };
                 ShowFromTray();
@@ -341,6 +351,48 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task RunScrollingCaptureAsync(CancellationToken token)
+    {
+        var picker = new WindowSourcePicker(token) { Title = Loc.T("capture.Scrolling") };
+        if (picker.ShowDialog() != true || picker.SelectedTarget is not { } target)
+            throw new OperationCanceledException();
+        token.ThrowIfCancellationRequested();
+        var snapshot = await GraphicsWindowCapture.TakeAsync(target, token);
+        if (WindowTargets.Identify(target.Handle) is not { } current || current.ProcessId != target.ProcessId)
+            throw new CaptureException("ERR_SCROLL_002");
+        target = current;
+        ScrollCaptureGeometry.ValidateSource(snapshot.PixelWidth, snapshot.PixelHeight);
+        var work = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).WorkingArea;
+        var bounds = VuSnap.Core.CaptureGeometry.FitPreview(work, snapshot.PixelWidth, snapshot.PixelHeight);
+        var selector = new CaptureWindow(snapshot, bounds, CaptureMode.Scrolling, isolated: true);
+        using (token.Register(() => Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (selector is { IsVisible: true }) selector.Close();
+        }))))
+        {
+            token.ThrowIfCancellationRequested();
+            if (selector.ShowDialog() != true || selector.ScrollSelection is null)
+                throw new OperationCanceledException();
+        }
+        token.ThrowIfCancellationRequested();
+        var crop = selector.ScrollSelection.Value;
+        ScrollCaptureGeometry.ValidateCrop(snapshot.PixelWidth, snapshot.PixelHeight, crop);
+        // Release the full selection snapshot before starting the continuous capture.
+        var sourceWidth = snapshot.PixelWidth; var sourceHeight = snapshot.PixelHeight;
+        snapshot = null!; selector = null!;
+        var session = new ScrollingCaptureWindow(target, crop, sourceWidth, sourceHeight);
+        var result = await session.RunAsync(token);
+        token.ThrowIfCancellationRequested();
+        if (_exiting || Dispatcher.HasShutdownStarted) return;
+        var preview = new ScrollPreviewWindow(result);
+        using var closePreview = token.Register(() => Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (preview.IsVisible) preview.Close();
+        })));
+        preview.ShowDialog();
+        SetStatus("");
+    }
+
     // ───────────────────────── Đồng bộ UI <-> settings ─────────────────────────
 
     private bool SaveSettings()
@@ -356,7 +408,7 @@ public partial class MainWindow : Window
         ApplyTheme(_settings.Theme);
         ApplyLanguage();
 
-        foreach (var rb in new[] { ModeRegion, ModeActiveWindow, ModeMonitor, ModeDesktop, ModeWindowPicker, ModeWindowHover, ModeRepeat, ModeColorPicker })
+        foreach (var rb in new[] { ModeRegion, ModeActiveWindow, ModeMonitor, ModeDesktop, ModeWindowPicker, ModeWindowHover, ModeRepeat, ModeColorPicker, ModeScrolling })
             rb.IsChecked = (string)rb.Tag == _settings.DefaultCaptureMode;
         foreach (var rb in new[] { Delay0, Delay3, Delay5, Delay10 })
             rb.IsChecked = (string)rb.Tag == _settings.CaptureDelaySeconds.ToString(CultureInfo.InvariantCulture);
@@ -445,6 +497,7 @@ public partial class MainWindow : Window
         ModeWindowHover.Content = Loc.T("capture.WindowHover");
         ModeRepeat.Content = Loc.T("capture.Repeat");
         ModeColorPicker.Content = Loc.T("capture.ColorPicker");
+        ModeScrolling.Content = Loc.T("capture.Scrolling");
 
         CaptureDelayLabel.Text = Loc.T("capture.delay");
         Delay0.Content = "Off";

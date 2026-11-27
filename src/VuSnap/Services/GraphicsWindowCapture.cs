@@ -17,7 +17,7 @@ using WinRT;
 
 namespace VuSnap.Services;
 
-public static class GraphicsWindowCapture
+public static partial class GraphicsWindowCapture
 {
     [ComImport, Guid("3628E81B-3CAC-4C60-B7F4-23CE0E0C3356"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IGraphicsCaptureItemInterop
