@@ -10,10 +10,11 @@ namespace VuSnap.Windows;
 internal sealed class TextAnalysisWindow : Window
 {
     private readonly BitmapSource _image;
-    private readonly ComboBox _languages = new() { DisplayMemberPath = "Display", MinWidth = 240, Margin = new Thickness(0, 0, 8, 0) };
+    private readonly ComboBox _languages = new() { DisplayMemberPath = "Display", MinWidth = 0, Margin = new Thickness(0, 0, 8, 0) };
     private readonly TextBox _text = new()
     {
-        AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.NoWrap, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        FontFamily = new FontFamily("Cascadia Mono, Consolas"),
         VerticalContentAlignment = VerticalAlignment.Top, FontSize = 14, Padding = new Thickness(12),
     };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 8), FontSize = 12 };
@@ -56,9 +57,13 @@ internal sealed class TextAnalysisWindow : Window
         top.Children.Add(help);
 
         top.Children.Add(new TextBlock { Text = Loc.T("ocr.language"), FontWeight = FontWeights.SemiBold, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 6) });
-        var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
+        var toolbar = new Grid();
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1,GridUnitType.Star) });
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _run.Content = Loc.T("ocr.run"); _cancel.Content = Loc.T("utility.cancel");
         _cancel.Margin = new Thickness(8, 0, 0, 0);
+        Grid.SetColumn(_run,1); Grid.SetColumn(_cancel,2);
         toolbar.Children.Add(_languages); toolbar.Children.Add(_run); toolbar.Children.Add(_cancel);
         top.Children.Add(toolbar);
         _status.SetResourceReference(TextBlock.ForegroundProperty, "MutedBrush");
@@ -80,7 +85,7 @@ internal sealed class TextAnalysisWindow : Window
         {
             var options = OfflineOcrService.Options();
             _languages.ItemsSource = options;
-            _languages.SelectedItem = options.FirstOrDefault(x => Loc.Lang == "vi" && x.Language == "vie+eng")
+            _languages.SelectedItem = options.FirstOrDefault(x => x.Language == "vie+eng")
                 ?? options.FirstOrDefault(x => Loc.Lang == "vi" && (x.Language == "vie" || x.Language.StartsWith("vi-")))
                 ?? options.FirstOrDefault(x => x.Language.StartsWith("en-") || x.Language == "eng") ?? options.FirstOrDefault();
             _run.IsEnabled = options.Count > 0;

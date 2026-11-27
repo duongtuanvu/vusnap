@@ -11,11 +11,6 @@
   </WindowChrome.WindowChrome>
 
   <Grid ClipToBounds="True">
-    <!-- Subtle ambient pastel aura washes -->
-    <Ellipse Width="280" Height="280" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-110,-150,0,0" Fill="{DynamicResource AuraLavenderBrush}" IsHitTestVisible="False"/>
-    <Ellipse Width="240" Height="240" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-100,-120" Fill="{DynamicResource AuraPeriwinkleBrush}" IsHitTestVisible="False"/>
-    <Ellipse Width="200" Height="200" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-90,0,0,-100" Fill="{DynamicResource AuraMintBrush}" IsHitTestVisible="False"/>
-
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
@@ -31,17 +26,7 @@
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <!-- VuSnap Brand Mark harmonized with pastel palette -->
-          <Border Width="32" Height="32" CornerRadius="9" Background="#FF181C3A" Margin="0,0,10,0">
-            <Viewbox Width="24" Height="24">
-              <Canvas Width="256" Height="256">
-                <Path Data="M83,49 H58 Q49,49 49,58 V84 M173,49 H198 Q207,49 207,58 V84 M49,172 V198 Q49,207 58,207 H83 M207,172 V198 Q207,207 198,207 H173"
-                      Stroke="{DynamicResource MintBrush}" StrokeThickness="15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
-                <Path Data="M77,88 L128,178 L179,88" Stroke="White" StrokeThickness="24" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
-                <Ellipse Canvas.Left="167" Canvas.Top="76" Width="24" Height="24" Fill="{DynamicResource MintBrush}"/>
-              </Canvas>
-            </Viewbox>
-          </Border>
+          <Image Width="32" Height="32" Margin="0,0,10,0" Source="/Assets/app-logo.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
           <TextBlock Text="VuSnap" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
           <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="9,0,0,0" VerticalAlignment="Center">
             <TextBlock x:Name="VersionBadge" Text="v0.4.3" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>

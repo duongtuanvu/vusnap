@@ -181,7 +181,7 @@ public static class Loc
         ["ocr.help"] = ("Windows OCR uses installed language packs. For Vietnamese or bilingual OCR, install Tesseract in Program Files with vie/eng language data. Images are never uploaded.", "Windows OCR dùng gói ngôn ngữ đã cài. Để OCR tiếng Việt hoặc song ngữ, cài Tesseract trong Program Files với dữ liệu vie/eng. Ảnh không được tải lên mạng."),
         ["ocr.running"] = ("Recognizing locally…", "Đang nhận diện trên máy…"),
         ["ocr.empty"] = ("No text recognized.", "Không nhận diện được văn bản."),
-        ["ocr.done"] = ("Review the result before copying.", "Kiểm tra kết quả trước khi sao chép."),
+        ["ocr.done"] = ("Layout reconstructed from word positions. Review text and spacing before copying.", "Đã dựng lại bố cục theo vị trí chữ. Kiểm tra văn bản và khoảng cách trước khi copy."),
         ["ocr.unavailable"] = ("No usable OCR engine or language data installed.", "Chưa có engine OCR hoặc dữ liệu ngôn ngữ phù hợp."),
         ["ocr.large"] = ("Selection is too large for OCR. Select a smaller area.", "Vùng chọn quá lớn để OCR. Hãy chọn vùng nhỏ hơn."),
         ["ocr.timeout"] = ("OCR timed out or was cancelled.", "OCR quá thời gian hoặc đã hủy."),

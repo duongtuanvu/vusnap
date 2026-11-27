@@ -236,23 +236,19 @@
         <StackPanel x:Name="FlyList" MinWidth="165"/>
       </Border>
 
-      <Border x:Name="Loupe" Visibility="Collapsed" IsHitTestVisible="False" Background="#F2161A2E" CornerRadius="12"
-              BorderBrush="#FF7396FE" BorderThickness="1.5" Padding="6">
-        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/></Border.Effect>
-        <StackPanel>
-          <Border CornerRadius="8" ClipToBounds="True" Width="136" Height="136">
-            <Grid Width="136" Height="136">
-              <Rectangle x:Name="LoupeView" Width="136" Height="136"/>
-              <Rectangle Width="12" Height="12" Stroke="Black" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              <Rectangle Width="10" Height="10" Stroke="White" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Grid>
-          </Border>
-          <StackPanel Orientation="Horizontal" Margin="0,6,0,1">
-            <Border x:Name="LoupeSwatch" Width="14" Height="14" CornerRadius="4" BorderBrush="White" BorderThickness="1" Margin="0,0,7,0"/>
-            <TextBlock x:Name="LoupeText" Foreground="#FFF4F6FF" FontSize="11" FontFamily="Cascadia Mono, Consolas" VerticalAlignment="Center"/>
+      <StackPanel x:Name="Loupe" Visibility="Collapsed" IsHitTestVisible="False" Background="Transparent">
+        <Grid Width="150" Height="150">
+          <Ellipse x:Name="LoupeView" Width="150" Height="150" Stroke="#FF7396FE" StrokeThickness="2" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+          <Rectangle Width="16" Height="16" Stroke="Black" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <Rectangle Width="14" Height="14" Stroke="White" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+        <Border Background="White" BorderBrush="#FFDCE2F5" BorderThickness="1" CornerRadius="9" Padding="7,4" Margin="0,5,0,0" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal">
+            <Border x:Name="LoupeSwatch" Width="13" Height="13" CornerRadius="3" BorderBrush="#FF8795A6" BorderThickness="1" Margin="0,0,6,0"/>
+            <TextBlock x:Name="LoupeText" Foreground="#FF161A30" FontSize="11" FontFamily="Cascadia Mono, Consolas" VerticalAlignment="Center"/>
           </StackPanel>
-        </StackPanel>
-      </Border>
+        </Border>
+      </StackPanel>
 
       <Border x:Name="SizeBadge" Background="#EA161A2E" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="9" Padding="9,4" Visibility="Collapsed" IsHitTestVisible="False">
         <TextBlock x:Name="SizeBadgeText" Foreground="#FFF4F6FF" FontFamily="Cascadia Mono, Consolas" FontSize="12" FontWeight="SemiBold"/>

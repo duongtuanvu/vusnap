@@ -139,7 +139,8 @@ public partial class CaptureWindow : Window
     private bool _zoomDirty;                         // có thay đổi zoom/hình dạng chưa lưu vào cài đặt
     private readonly DispatcherTimer _zoomSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(700) };
     private readonly DispatcherTimer _badgeTimer = new() { Interval = TimeSpan.FromMilliseconds(900) };
-    private ImageBrush? _loupeBrush;             // brush của kính lúp khi chọn vùng
+    private ImageBrush? _loupeBrush;
+    private readonly byte[] _loupePixel = new byte[4];             // brush của kính lúp khi chọn vùng
     private double _h, _s = 1, _v = 1;
     private int _suppress;      // >0: đang cập nhật UI từ code, bỏ qua event
 
@@ -163,7 +164,7 @@ public partial class CaptureWindow : Window
         _windowTargets = windows ?? Array.Empty<DrawingRectangle>();
         _pickingWindow = mode == CaptureMode.WindowHover;
         Screenshot.Source = source;
-        _loupeBrush = new ImageBrush(source) { Stretch = Stretch.Fill };
+        _loupeBrush = new ImageBrush(source) { Stretch = Stretch.Fill, TileMode = TileMode.None, ViewboxUnits = BrushMappingMode.RelativeToBoundingBox };
         RenderOptions.SetBitmapScalingMode(_loupeBrush, BitmapScalingMode.NearestNeighbor);
         LoupeView.Fill = _loupeBrush;
 
@@ -261,6 +262,7 @@ public partial class CaptureWindow : Window
         var p = e.GetPosition(Root);
         if (_pickingWindow)
         {
+            HideLoupe();
             if (TryWindowSelection(p, true)) e.Handled = true;
             return;
         }
@@ -403,7 +405,7 @@ public partial class CaptureWindow : Window
     /// <summary>Ô phóng to 17×17 pixel quanh con trỏ (8×), kèm tọa độ và màu pixel — chỉ hiện khi chưa có vùng chọn hoặc đang kéo/resize vùng chọn.</summary>
     private void UpdateLoupe(Point p)
     {
-        if (!_cfg.ShowLoupe || _loupeBrush is null || (_hasSel && _drag is not (Drag.Creating or Drag.Resizing)))
+        if (!_cfg.ShowLoupe || _loupeBrush is null || _hasSel || _drag != Drag.None || Mouse.LeftButton == MouseButtonState.Pressed)
         {
             HideLoupe();
             return;
@@ -411,10 +413,13 @@ public partial class CaptureWindow : Window
         int pw = _source.PixelWidth, ph = _source.PixelHeight;
         var px = Math.Clamp((int)(p.X * ScaleX), 0, pw - 1);
         var py = Math.Clamp((int)(p.Y * ScaleY), 0, ph - 1);
-        const int n = 17, half = n / 2;
-        _loupeBrush.Viewbox = new Rect((px - half) / (double)pw, (py - half) / (double)ph, n / (double)pw, n / (double)ph);
+        const int n = 11, half = n / 2;
+        // Keep the entire sampled patch inside the bitmap; no black padding at screen edges.
+        int width = Math.Min(n,pw), height = Math.Min(n,ph);
+        int left = Math.Clamp(px-half,0,pw-width), top = Math.Clamp(py-half,0,ph-height);
+        _loupeBrush.Viewbox = new Rect(left/(double)pw,top/(double)ph,width/(double)pw,height/(double)ph);
 
-        var buf = new byte[4];
+        var buf = _loupePixel;
         _source.CopyPixels(new Int32Rect(px, py, 1, 1), buf, 4, 0); // Bgra
         LoupeSwatch.Background = new SolidColorBrush(Color.FromRgb(buf[2], buf[1], buf[0]));
         LoupeText.Text = $"{px}, {py}  #{buf[2]:X2}{buf[1]:X2}{buf[0]:X2}";
@@ -430,6 +435,7 @@ public partial class CaptureWindow : Window
 
     private void BeginDrag(Drag kind, Point p)
     {
+        HideLoupe();
         _drag = kind;
         _dragStart = p;
         _dragOrigRect = _sel;
