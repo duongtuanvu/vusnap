@@ -2,7 +2,7 @@
 
 > Single source of truth for development scope, implementation progress and acceptance.
 > Updated: 2026-11-27 (Asia/Bangkok).
-> Current merged application version: **0.2.0**. No release artifact/tag has been verified.
+> Current merged application version: **0.2.1**. CI portable and installer artifacts are available; no public release/tag has been verified.
 
 ## Working agreement
 
@@ -24,7 +24,7 @@ Status: merged; CI passed.
 - [x] Isolate settings, registry, single-instance identifiers and installer identity.
 - [x] Update README (EN/VI), upstream attribution and GitHub release links.
 - [x] Windows CI baseline build.
-- [ ] Independent VuSnap logo/icon and visual identity (moved to v0.2.x).
+- [x] Independent VuSnap logo/icon assets (implemented in v0.2.1; visual runtime acceptance remains open).
 
 Evidence: [baseline commit e47dc696](https://github.com/duongtuanvu/vusnap/commit/e47dc6969f01cfbc1976d44e3f2e9c47143ddad2), [CI](https://github.com/duongtuanvu/vusnap/actions/runs/45957118268).
 
@@ -54,16 +54,18 @@ Evidence: [PR #1](https://github.com/duongtuanvu/vusnap/pull/1), [PR CI](https:/
 
 - [ ] Close unresolved v0.2.0 runtime acceptance items; prioritize correctness and data safety before new editor architecture work.
 - [ ] Add focused Windows UI/integration regression coverage.
-- [ ] Verify portable and installer packaging, including MIT LICENSE.
+- [x] Verify portable and installer packaging, including MIT LICENSE (CI build and artifact upload passed; installation smoke test remains open).
 - [ ] Record benchmark baseline and remaining non-blocking technical debt.
 - [ ] CI and acceptance pass; merge, update plan.
 
-### v0.2.1 implementation candidate (pending CI/merge)
+### v0.2.1 — merged implementation and CI evidence
 
-- [ ] Metadata-only history and gesture coalescing; pointer capture recovery.
-- [ ] Hotkey parsing/rollback, serialized settings updates and image export regression tests.
-- [ ] Independent logo and seven-size ICO; CI portable and installer packaging verification.
-- [ ] Manual Windows interaction and benchmark acceptance remain outstanding.
+- [x] Implement metadata-only history, gesture coalescing and pointer capture recovery (build passed; manual interaction acceptance remains open).
+- [x] Implement hotkey parsing/rollback, serialized settings updates and image export regression tests; all 11 core regression groups passed.
+- [x] Independent logo and seven-size ICO; CI portable and installer packaging verification.
+- [ ] Manual Windows interaction, installer installation/uninstallation, icon scaling and benchmark acceptance.
+
+Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https://github.com/duongtuanvu/vusnap/actions/runs/45960224061), [push CI](https://github.com/duongtuanvu/vusnap/actions/runs/45960217962), [merge 5879cc5](https://github.com/duongtuanvu/vusnap/commit/5879cc5ba814de0710e3dce42c51226acce9cce2), [CI package artifact](https://github.com/duongtuanvu/vusnap/actions/runs/45960224061/artifacts/15180258020) (temporary retention).
 
 ## v0.3.0 — Advanced Capture
 
@@ -134,7 +136,8 @@ Evidence: [PR #1](https://github.com/duongtuanvu/vusnap/pull/1), [PR CI](https:/
 | --- | --- | --- | --- |
 | 2026-11-27 | 0.1.0 | Imported and rebranded; baseline CI passed | e47dc696 |
 | 2026-11-27 | 0.2.0 | Core implementation and regression CI passed; merged; manual runtime acceptance open | PR #1 / 24e9f2e |
+| 2026-11-27 | 0.2.1 | Stabilization and branding implemented; all 11 regression groups and packaging CI passed; merged | PR #2 / 5879cc5 |
 
 ## Next task
 
-v0.2.x: close highest-risk runtime and settings/history acceptance gaps, then establish the independent visual identity and proceed to Advanced Capture. If manual Windows checks cannot be executed in the current environment, record that limitation explicitly instead of marking them complete.
+Next feature increment: v0.3.0 Advanced Capture, beginning with capture request/result model and current-monitor/full-window modes. Keep unresolved v0.2.x manual Windows acceptance and benchmarks visible as a parallel gate; do not mark them complete without evidence or release a production version with blocking defects.
