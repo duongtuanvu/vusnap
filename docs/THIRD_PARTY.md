@@ -30,3 +30,7 @@ This increment captures the visible desktop pixels, not hidden window content. O
 - Reviewed Snapboard ImageStitcher.cs (MIT, commit 3796510), SnipLite FrameMatcher.cs and StationaryEdges.cs (MIT, commit 50e5fdd), and Aquashot ScrollStitcher.cs (WTFPL, commit e3aea10). Stackshot's existing row-hash voting, fractional matching, sticky edges and float suppression with synthetic tests were preferred. No code from ShareX (GPL-3.0) was copied.
 
 VuSnap integration uses the existing WGC interop/device helper and a continuous free-threaded frame pool; automatic wheel is explicitly enabled and guarded by target identity, foreground, cursor-in-crop and modifier checks. No imported Stackshot native input, UI, updater or network components. Manual Windows acceptance remains required.
+
+## D3D11 region readback
+
+- Uses [Vortice.Direct3D11 3.8.3](https://www.nuget.org/packages/Vortice.Direct3D11/3.8.3) with Vortice.DXGI, Vortice.Mathematics and SharpGen runtime dependencies to copy the selected crop into a reusable staging texture. Their MIT notices are included in the bundled root LICENSE. Windows CI checks pixel values and padded row pitches using the WARP software device.

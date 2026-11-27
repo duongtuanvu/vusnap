@@ -34,6 +34,7 @@ internal static class EditorRegressionTests
         {
             try
             {
+                Application.ResourceAssembly = typeof(MainWindow).Assembly;
                 var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
                 app.Resources.MergedDictionaries.Add(new ResourceDictionary
                 {
@@ -131,6 +132,7 @@ internal static class EditorRegressionTests
                 Set(window, "_current", path);
                 Set(window, "_penPreview", geometry);
                 Call(window, "ApplyStyle", path);
+                if (style != "Double") path.Data = geometry;
                 var before = GC.GetAllocatedBytesForCurrentThread();
                 for (int i = 1; i <= 2000; i++) Call(window, "UpdateDraw", new Point(10 + i * 0.2, 20 + i % 20));
                 var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
