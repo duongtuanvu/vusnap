@@ -15,7 +15,7 @@ public static class AppInfo
     public const string ReleasesUrl = RepoUrl + "/releases/latest";
     public const string DonateUrl = "";
 
-    public static string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.3.1";
+    public static string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.4.0";
 
     /// <summary>Tiêu đề cửa sổ: tên app + phiên bản.</summary>
     public static string TitleWithVersion => $"{AppName} v{Version}";

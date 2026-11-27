@@ -14,3 +14,7 @@ This increment captures the visible desktop pixels, not hidden window content. O
 ## WGC engine
 
 - Adapted [SnipCanvas GraphicsWindowCapture.cs](https://github.com/gruzker/SnipCanvas/blob/65db8910e87dfd28dc0b56e3bd639173f09f16dc/GraphicsWindowCapture.cs), MIT, Copyright (c) 2026 SnipCanvas contributors. Root LICENSE includes attribution. Changes: explicit window identity, bounded frames, linked timeout, cancellation, and error codes. WGC active/list modes never fall back to desktop capture. Separate WindowHover mode is explicitly a visible desktop crop.
+
+## OCR
+
+- Uses Windows.Media.Ocr (Windows SDK) and optional user-installed [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) via documented stdin/stdout CLI. No Tesseract binaries or language models redistributed. Models are user-installed and recognition is local. [Microsoft OCR language pack documentation](https://learn.microsoft.com/windows/powertoys/text-extractor).

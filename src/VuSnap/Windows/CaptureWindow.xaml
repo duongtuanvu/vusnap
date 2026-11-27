@@ -186,6 +186,7 @@
           <Button Style="{StaticResource ActionButton}" Click="QuickSave_Click" ToolTip="Lưu nhanh vào thư mục ảnh (Ctrl+S)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentSave"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Copy (Ctrl+C)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentCopy"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Hoàn tất &amp; copy (Enter)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Check" Foreground="#FF22C55E" Width="24" Height="24"/></Button>
+          <Button Style="{StaticResource ActionButton}" Click="Ocr_Click" ToolTip="OCR"><TextBlock Text="OCR" FontSize="11" FontWeight="Bold"/></Button>
         </StackPanel>
       </Border>
 

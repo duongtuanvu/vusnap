@@ -43,3 +43,7 @@ A version tag such as `v0.2.1` triggers the release workflow for the installer a
 ## License and attribution
 
 MIT. See [LICENSE](LICENSE) for the original copyright of Tokisaki Nino and the VuSnap copyright notice. VuSnap uses independent logo and icon assets; upstream history is documented in [docs/UPSTREAM_CHANGELOG.md](docs/UPSTREAM_CHANGELOG.md).
+
+## Offline OCR (v0.4.0)
+
+Select a screenshot region and press **OCR**. Choose an available engine/language, then Recognize. Windows OCR uses installed Windows OCR language packs. For reliable Vietnamese or mixed Vietnamese/English, install Tesseract OCR into the standard Program Files/Tesseract-OCR directory with `vie.traineddata` and `eng.traineddata` in its `tessdata` folder. VuSnap only exposes installed languages; it never downloads models or executes a program found via PATH. Recognition uses memory/stdin, not temporary screenshot files. Copy selected text or all results. No automatic clipboard write, network upload or history. Maximum 16 MP and 30-second timeout; Windows OCR may have a lower dimension limit. OCR results require review.

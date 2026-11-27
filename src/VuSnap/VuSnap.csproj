@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>VuSnap</AssemblyName>
     <RootNamespace>VuSnap</RootNamespace>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <Product>VuSnap</Product>
     <Company>vudt</Company>
     <Copyright>Copyright (c) 2026 Tokisaki Nino; Copyright (c) 2026 vudt</Copyright>

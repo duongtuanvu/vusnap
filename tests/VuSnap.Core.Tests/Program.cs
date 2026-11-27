@@ -204,6 +204,17 @@ try
         }
         catch (OperationCanceledException) { }
     });
+    Test("OCR image bounds and pre-cancellation", () =>
+    {
+        OfflineOcrService.ValidateSize(3840,2160);
+        Throws(() => OfflineOcrService.ValidateSize(0,10));
+        Throws(() => OfflineOcrService.ValidateSize(8192,8192));
+        var image = System.Windows.Media.Imaging.BitmapSource.Create(1,1,96,96,System.Windows.Media.PixelFormats.Bgr32,null,new byte[4],4);
+        image.Freeze();
+        using var cancel = new CancellationTokenSource(); cancel.Cancel();
+        try { OfflineOcrService.RecognizeAsync(image,new OcrOption("windows","en-US","test"),cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
+        catch (OperationCanceledException) { }
+    });
 }
 finally { try { Directory.Delete(folder, true); } catch { } }
 return failures == 0 ? 0 : 1;
