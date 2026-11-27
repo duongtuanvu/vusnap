@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] - Unreleased
+
+- Restore annotation history from metadata instead of retaining WPF visuals; coalesce slider and color gestures.
+- Recover interrupted mouse capture and guard stale text-editor callbacks.
+- Harden shortcut parsing, settings updates and hotkey rollback.
+- Extract image export and test concurrent no-overwrite publication and image encoding.
+
 ## [0.2.0] - Unreleased
 
 - Bounded annotation state history with undo/redo for layer edits.

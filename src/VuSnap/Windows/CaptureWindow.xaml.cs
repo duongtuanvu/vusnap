@@ -37,6 +37,7 @@ public partial class CaptureWindow : Window
     /// <summary>Thuộc tính của một layer; element tương ứng được dựng lại từ đây trong <see cref="ApplyStyle"/>.</summary>
     private sealed class Ann
     {
+        public Guid Id = Guid.NewGuid();
         public string Kind = "";
         public Color Color;
         public double Thick;
@@ -54,10 +55,11 @@ public partial class CaptureWindow : Window
         public string LineType = "Plain";  // Line
         public bool Round = true;         // Magnifier: kính tròn / chữ nhật
         public List<Point>? Pts;          // Pen: các điểm của nét vẽ
-        public Ann Copy()
+        public Ann Copy(bool shareCompletedPoints = false)
         {
             var c = (Ann)MemberwiseClone();
-            c.Pts = Pts is null ? null : new List<Point>(Pts);
+            // Completed pen strokes are never mutated; share geometry in history rather than cloning every point.
+            c.Pts = shareCompletedPoints || Pts is null ? Pts : new List<Point>(Pts);
             return c;
         }
     }
@@ -105,6 +107,7 @@ public partial class CaptureWindow : Window
     private Point _dragStart;
     private Point _lastEnd;
     private Rect _dragOrigRect;
+    private bool _dragHadSelection;
     private int _dragHandle;
 
     private string? _tool;
@@ -189,6 +192,7 @@ public partial class CaptureWindow : Window
         ApplyUiSettings();
         BuildSwatches(Swatches, QuickPalette, 22);
         BuildSwatches(PSwatches, PanelPalette, 20);
+        InitializeHistoryGestures();
         _ready = true;
         SetColor(_color);
         SetThick(_thick);
@@ -241,7 +245,7 @@ public partial class CaptureWindow : Window
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (_outputBusy) return;
+        if (_outputBusy || _drag != Drag.None) return;
         var p = e.GetPosition(Root);
         if (_editor is not null)
         {
@@ -288,7 +292,7 @@ public partial class CaptureWindow : Window
                     if (!_selection.Contains(hit)) Select(hit);
                     _moveOrigs.Clear();
                     foreach (var el in _selection) { var t = TranslateOf(el); _moveOrigs[el] = new Vector(t.X, t.Y); }
-                    _drag = Drag.MovingAnn; _dragStart = p; Root.CaptureMouse();
+                    _drag = Drag.MovingAnn; _dragStart = p; if (!Root.CaptureMouse()) CancelPointerDrag();
                     return;
                 }
                 BeginDraw(p);
@@ -297,8 +301,8 @@ public partial class CaptureWindow : Window
             if (Ink.Children.Count > 0) return; // đã chú thích thì không cho chọn lại vùng khác
         }
 
-        BeginDrag(Drag.Creating, p);
         Hint.Visibility = Visibility.Collapsed;
+        BeginDrag(Drag.Creating, p);
     }
 
     private void Root_MouseMove(object sender, MouseEventArgs e)
@@ -357,6 +361,7 @@ public partial class CaptureWindow : Window
                 if (el is Rectangle r && r.Tag is Ann { Kind: "Blur" or "Invert" }) ApplyEffect(r);
             foreach (var el in _selection)
                 if (el is Path mp && mp.Tag is Ann { Kind: "Magnifier" } ma) ApplyMagnifier(mp, ma);
+            _moveOrigs.Clear();
             UpdateOutline(); RecordHistory();
             return;
         }
@@ -410,9 +415,10 @@ public partial class CaptureWindow : Window
         _drag = kind;
         _dragStart = p;
         _dragOrigRect = _sel;
+        _dragHadSelection = _hasSel;
         if (kind == Drag.Creating) { _hasSel = false; _sel = new Rect(p, p); }
         HideBars();
-        Root.CaptureMouse();
+        if (!Root.CaptureMouse()) CancelPointerDrag();
     }
 
     private void ClearSelection()
@@ -1073,15 +1079,17 @@ public partial class CaptureWindow : Window
     /// <summary>Lưu độ phóng đại + hình dạng kính lúp vào cài đặt (đọc-sửa-ghi để không đè các cài đặt khác).</summary>
     private void SaveLensDefaults()
     {
-        _zoomDirty = false;
+        _zoomDirty = true;
         try
         {
-            var s = SettingsService.Load();
-            s.DefaultZoom = _zoom;
-            s.DefaultLens = _lensRound ? "Circle" : "Square";
-            s.ShowGrid = _gridOn; s.GridSize = _gridSize; s.GridType = _gridType;
-            SettingsService.Save(s);
+            var s = SettingsService.Update(s =>
+            {
+                s.DefaultZoom = _zoom;
+                s.DefaultLens = _lensRound ? "Circle" : "Square";
+                s.ShowGrid = _gridOn; s.GridSize = _gridSize; s.GridType = _gridType;
+            });
             _cfg.DefaultZoom = s.DefaultZoom; _cfg.DefaultLens = s.DefaultLens;
+            _zoomDirty = false;
         }
         catch (Exception ex) { ErrorLog.Write(ErrorCodes.SettingsWrite, ex); }
     }
@@ -1457,12 +1465,12 @@ public partial class CaptureWindow : Window
     private void SvPick(Point p) { _s = Math.Clamp(p.X / SvW, 0, 1); _v = 1 - Math.Clamp(p.Y / SvH, 0, 1); SetColor(FromHsv(_h, _s, _v), keepHsv: true); }
     private void HuePick(Point p) { _h = Math.Clamp(p.X / SvW, 0, 1) * 359.999; SetColor(FromHsv(_h, _s, _v), keepHsv: true); }
 
-    private void Sv_Down(object sender, MouseButtonEventArgs e) { _svDrag = true; SvBox.CaptureMouse(); SvPick(e.GetPosition(SvBox)); e.Handled = true; }
+    private void Sv_Down(object sender, MouseButtonEventArgs e) { _svDrag = SvBox.CaptureMouse(); SvPick(e.GetPosition(SvBox)); e.Handled = true; }
     private void Sv_Move(object sender, MouseEventArgs e) { if (_svDrag) SvPick(e.GetPosition(SvBox)); }
-    private void Sv_Up(object sender, MouseButtonEventArgs e) { _svDrag = false; SvBox.ReleaseMouseCapture(); }
-    private void Hue_Down(object sender, MouseButtonEventArgs e) { _hueDrag = true; HueBar.CaptureMouse(); HuePick(e.GetPosition(HueBar)); e.Handled = true; }
+    private void Sv_Up(object sender, MouseButtonEventArgs e) { _svDrag = false; SvBox.ReleaseMouseCapture(); RecordHistory(); }
+    private void Hue_Down(object sender, MouseButtonEventArgs e) { _hueDrag = HueBar.CaptureMouse(); HuePick(e.GetPosition(HueBar)); e.Handled = true; }
     private void Hue_Move(object sender, MouseEventArgs e) { if (_hueDrag) HuePick(e.GetPosition(HueBar)); }
-    private void Hue_Up(object sender, MouseButtonEventArgs e) { _hueDrag = false; HueBar.ReleaseMouseCapture(); }
+    private void Hue_Up(object sender, MouseButtonEventArgs e) { _hueDrag = false; HueBar.ReleaseMouseCapture(); RecordHistory(); }
 
     private void PHex_KeyDown(object sender, KeyEventArgs e)
     {
@@ -2033,7 +2041,7 @@ public partial class CaptureWindow : Window
         Ink.Children.Add(el);
         _current = el;
         _drag = Drag.Drawing; _dragStart = p; _lastEnd = p;
-        Root.CaptureMouse();
+        if (!Root.CaptureMouse()) CancelPointerDrag();
     }
 
     /// <summary>Giữ Shift: hình vuông/tròn cho Rect/Ellipse..., khóa góc 45° cho Line/Arrow/đuôi số.</summary>
@@ -2291,13 +2299,13 @@ public partial class CaptureWindow : Window
             else if (e.Key == Key.Escape) { CancelText(); e.Handled = true; }
             else if (e.Key == Key.Enter) { CommitText(); e.Handled = true; }
         };
-        ed.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(CommitText, DispatcherPriority.Background);
+        ed.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(() => { if (ReferenceEquals(_editor, ed)) CommitText(); }, DispatcherPriority.Background);
         host.Visibility = Visibility.Collapsed;
         _editTarget = host;
         Canvas.SetLeft(ed, cx - ed.Width / 2); Canvas.SetTop(ed, cy - ed.FontSize * 0.95);
         Ink.Children.Add(ed);
         _editor = ed;
-        Dispatcher.BeginInvoke(() => { ed.Focus(); Keyboard.Focus(ed); ed.SelectAll(); }, DispatcherPriority.Input);
+        Dispatcher.BeginInvoke(() => { if (!ReferenceEquals(_editor, ed)) return; ed.Focus(); Keyboard.Focus(ed); ed.SelectAll(); }, DispatcherPriority.Input);
         UpdateOutline();
     }
 
@@ -2331,11 +2339,11 @@ public partial class CaptureWindow : Window
             if (e.Key == Key.Escape) { CancelText(); e.Handled = true; }
             else if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { CommitText(); e.Handled = true; }
         };
-        ed.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(CommitText, DispatcherPriority.Background);
+        ed.LostKeyboardFocus += (_, _) => Dispatcher.BeginInvoke(() => { if (ReferenceEquals(_editor, ed)) CommitText(); }, DispatcherPriority.Background);
         Canvas.SetLeft(ed, p.X); Canvas.SetTop(ed, p.Y);
         Ink.Children.Add(ed);
         _editor = ed;
-        Dispatcher.BeginInvoke(() => { ed.Focus(); Keyboard.Focus(ed); if (existing is not null) ed.SelectAll(); }, DispatcherPriority.Input);
+        Dispatcher.BeginInvoke(() => { if (!ReferenceEquals(_editor, ed)) return; ed.Focus(); Keyboard.Focus(ed); if (existing is not null) ed.SelectAll(); }, DispatcherPriority.Input);
         UpdateOutline();
     }
 
@@ -2460,7 +2468,7 @@ public partial class CaptureWindow : Window
     private FrameworkElement? CloneLayer(FrameworkElement el)
     {
         if (el.Tag is not Ann src) return null;
-        var a = src.Copy(); a.Name = null;
+        var a = src.Copy(shareCompletedPoints: true); a.Id = Guid.NewGuid(); a.Name = null;
         FrameworkElement c;
         switch (el)
         {
@@ -2554,18 +2562,6 @@ public partial class CaptureWindow : Window
         }
     }
 
-    private static void SaveToFile(BitmapSource bmp, string path, bool overwrite)
-    {
-        var ext = System.IO.Path.GetExtension(path);
-        BitmapEncoder enc = ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
-            ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
-            ? new JpegBitmapEncoder { QualityLevel = 95 }
-            : ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
-                ? new PngBitmapEncoder() : throw new NotSupportedException("ERR_EXPORT_FORMAT");
-        enc.Frames.Add(BitmapFrame.Create(bmp));
-        AtomicFile.Write(path, stream => enc.Save(stream), overwrite);
-    }
-
     private void ReportOutputError(string code, string message, Exception ex)
     {
         ErrorLog.Write(code, ex);
@@ -2575,6 +2571,8 @@ public partial class CaptureWindow : Window
     private async Task OutputAsync(string? path, bool overwrite, bool copy)
     {
         if (!_hasSel || _outputBusy || _drag != Drag.None) return;
+        CommitText();
+        RecordHistory();
         _outputBusy = true;
         IsEnabled = false;
         string code = ErrorCodes.Render;
@@ -2584,7 +2582,7 @@ public partial class CaptureWindow : Window
             if (path is not null)
             {
                 code = ErrorCodes.Export;
-                await Task.Run(() => SaveToFile(bmp, path, overwrite));
+                await Task.Run(() => ImageExportService.Save(bmp, path, overwrite));
             }
             if (copy)
             {

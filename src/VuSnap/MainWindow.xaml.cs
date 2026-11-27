@@ -98,7 +98,7 @@ public partial class MainWindow : Window
 
     private bool RegisterHotkey(string text)
     {
-        if (!ShortcutHelper.TryParse(text, out var mods, out var key) || mods == ModifierKeys.None) return false;
+        if (!ShortcutHelper.TryParseGlobal(text, out var mods, out var key)) return false;
         var vk = (uint)KeyInterop.VirtualKeyFromKey(key);
         return Native.RegisterHotKey(Hwnd, HotkeyId, ToWinMods(mods) | ModNoRepeat, vk);
     }
@@ -126,9 +126,9 @@ public partial class MainWindow : Window
     /// <summary>Tìm action đang dùng tổ hợp này (trừ <paramref name="except"/>); null nếu rảnh.</summary>
     private string? FindConflict(string combo, string? except)
     {
-        if (except != "__global" && string.Equals(_settings.Hotkey, combo, StringComparison.OrdinalIgnoreCase)) return Loc.T("gen.hotkey");
+        if (except != "__global" && ShortcutHelper.Equivalent(_settings.Hotkey, combo)) return Loc.T("gen.hotkey");
         var other = ShortcutHelper.ToolIds.Concat(ShortcutHelper.ActionIds)
-            .FirstOrDefault(a => a != except && string.Equals(ShortcutHelper.Get(_settings, a), combo, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(a => a != except && ShortcutHelper.Equivalent(ShortcutHelper.Get(_settings, a), combo));
         return other is null ? null : ActionName(other);
     }
 
@@ -142,7 +142,8 @@ public partial class MainWindow : Window
         if (mods == ModifierKeys.None) { SetStatus(Loc.T("sc.needMod")); return; }
 
         var combo = ShortcutHelper.Format(mods, key);
-        if (combo == _settings.Hotkey) return;
+        if (!ShortcutHelper.TryParseGlobal(combo, out _, out _)) { SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("sc.regFail")); return; }
+        if (ShortcutHelper.Equivalent(combo, _settings.Hotkey)) return;
         var conflict = FindConflict(combo, "__global");
         if (conflict is not null) { SetStatus(Loc.T("sc.conflict") + conflict); return; }
 
@@ -150,14 +151,19 @@ public partial class MainWindow : Window
         UnregisterHotkey();
         if (!RegisterHotkey(combo))
         {
-            RegisterHotkey(old);
-            SetStatus(Loc.T("sc.regFail"));
+            if (!RegisterHotkey(old)) ErrorLog.Write(ErrorCodes.Hotkey);
+            SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("sc.regFail"));
             return;
         }
         _settings.Hotkey = combo;
+        if (!SaveSettings())
+        {
+            _settings.Hotkey = old; UnregisterHotkey();
+            if (!RegisterHotkey(old)) ErrorLog.Write(ErrorCodes.Hotkey);
+            HotkeyBox.Text = ShortcutHelper.Pretty(old); return;
+        }
         HotkeyBox.Text = ShortcutHelper.Pretty(combo);
         SetStatus("");
-        SaveSettings();
     }
 
     // ───────────────────────── Chụp ─────────────────────────
@@ -169,7 +175,7 @@ public partial class MainWindow : Window
         try
         {
             // Ẩn cửa sổ chính trước khi chụp để nó không lọt vào ảnh.
-            if (WindowState != WindowState.Minimized)
+            if (IsVisible && WindowState != WindowState.Minimized)
             {
                 WindowState = WindowState.Minimized;
                 await Task.Delay(250);
@@ -177,7 +183,12 @@ public partial class MainWindow : Window
             var (image, screen) = ScreenCaptureService.CaptureMonitorAtCursor();
             var overlay = new CaptureWindow(image, screen.Bounds);
             // Chụp bằng hotkey nên để cửa sổ chính ở trạng thái thu nhỏ, không giành focus của app đang cần dán ảnh vào.
-            overlay.Closed += (_, _) => { _capturing = false; MemoryTrim.Schedule(); };
+            overlay.Closed += (_, _) =>
+            {
+                _capturing = false;
+                if (!_exiting && !Dispatcher.HasShutdownStarted) SyncFromDisk();
+                MemoryTrim.Schedule();
+            };
             overlay.Show();
             overlay.Activate();
         }
@@ -626,10 +637,15 @@ public partial class MainWindow : Window
 
     private void SetShortcut(string id, string combo)
     {
+        var previous = _settings.Shortcuts.TryGetValue(id, out var old);
         _settings.Shortcuts[id] = combo;
+        if (!SaveSettings())
+        {
+            if (previous) _settings.Shortcuts[id] = old!; else _settings.Shortcuts.Remove(id);
+            return;
+        }
         if (_scBoxes.TryGetValue(id, out var box)) ShowShortcut(box, combo);
         SetStatus("");
-        SaveSettings();
     }
 
     private void Shortcut_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -641,6 +657,7 @@ public partial class MainWindow : Window
         if (key == Key.Escape) { Keyboard.ClearFocus(); return; }
 
         var combo = ShortcutHelper.Format(Keyboard.Modifiers, key);
+        if (!ShortcutHelper.TryParse(combo, out _, out _)) { SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("sc.regFail")); return; }
         var conflict = FindConflict(combo, id);
         if (conflict is not null) { SetStatus(Loc.T("sc.conflict") + conflict); return; }
         SetShortcut(id, combo);
@@ -648,10 +665,11 @@ public partial class MainWindow : Window
 
     private void ResetShortcuts_Click(object sender, RoutedEventArgs e)
     {
+        var previous = _settings.Shortcuts;
         _settings.Shortcuts = ShortcutHelper.Defaults();
         foreach (var id in ShortcutHelper.ToolIds.Concat(ShortcutHelper.ActionIds))
             if (ShortcutHelper.TryParse(_settings.Hotkey, out var gm, out var gk) && ShortcutHelper.TryParse(_settings.Shortcuts[id], out var m, out var k) && gm == m && gk == k) _settings.Shortcuts[id] = "";
-        SaveSettings();
+        if (!SaveSettings()) { _settings.Shortcuts = previous; return; }
         BuildTable();
     }
 
@@ -977,32 +995,32 @@ public partial class MainWindow : Window
         var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "JSON|*.json" };
         if (dlg.ShowDialog(this) != true) return;
         if (SettingsService.Import(dlg.FileName) is not { } imported) { SetStatus($"[{ErrorCodes.SettingsInvalid}] " + Loc.T("set.importFail")); return; }
+        if (TryReplaceSettings(imported)) SetStatus(Loc.T("set.importOk"));
+    }
+
+    private bool TryReplaceSettings(AppSettings imported)
+    {
         var previous = _settings;
         UnregisterHotkey();
         if (!RegisterHotkey(imported.Hotkey))
         {
-            RegisterHotkey(previous.Hotkey);
+            if (!RegisterHotkey(previous.Hotkey)) ErrorLog.Write(ErrorCodes.Hotkey);
             ErrorLog.Write(ErrorCodes.Hotkey);
-            SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("status.hotkeyFail")); return;
+            SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("status.hotkeyFail")); return false;
         }
         _settings = imported;
         if (!SaveSettings())
         {
-            _settings = previous; UnregisterHotkey(); RegisterHotkey(previous.Hotkey); return;
+            _settings = previous; UnregisterHotkey(); if (!RegisterHotkey(previous.Hotkey)) ErrorLog.Write(ErrorCodes.Hotkey); return false;
         }
         AutoStart.Apply(_settings.StartWithWindows);
-        RefreshAll(); SetStatus(Loc.T("set.importOk"));
+        RefreshAll(); return true;
     }
 
     private void Reset_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show(this, Loc.T("gen.resetConfirm"), AppInfo.AppName, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-        UnregisterHotkey();
-        _settings = new AppSettings();
-        SaveSettings();
-        AutoStart.Apply(_settings.StartWithWindows);
-        if (!RegisterHotkey(_settings.Hotkey)) SetStatus(Loc.T("status.hotkeyFail"));
-        RefreshAll();
+        if (TryReplaceSettings(new AppSettings())) SetStatus("");
     }
 
     // ───────────────────────── Thông tin / Tính năng / Cách dùng / Donate ─────────────────────────

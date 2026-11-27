@@ -32,7 +32,7 @@ public static class SettingsService
             s.DefaultColor is null || !Regex.IsMatch(s.DefaultColor, @"\A#[0-9A-Fa-f]{6}\z") ||
             string.IsNullOrWhiteSpace(s.SaveDirectory) || s.SaveDirectory.Length > 4096 ||
             s.ToolOrder is null || s.HiddenTools is null || s.Shortcuts is null ||
-            !ShortcutHelper.TryParse(s.Hotkey, out var mods, out var key) || mods == ModifierKeys.None)
+            !ShortcutHelper.TryParseGlobal(s.Hotkey, out var mods, out var key))
             return false;
 
         try { if (!Path.IsPathFullyQualified(s.SaveDirectory)) return false; _ = Path.GetFullPath(s.SaveDirectory); }
@@ -95,5 +95,18 @@ public static class SettingsService
     public static void Save(AppSettings settings)
     {
         lock (Gate) Write(settings, FilePath);
+    }
+
+    /// <summary>Serialized read-modify-write. Do not overwrite unreadable settings with defaults.</summary>
+    public static AppSettings Update(Action<AppSettings> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        lock (Gate)
+        {
+            var settings = File.Exists(FilePath) ? Read(FilePath) : new AppSettings();
+            change(settings);
+            Write(settings, FilePath);
+            return settings;
+        }
     }
 }
