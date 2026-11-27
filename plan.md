@@ -2,7 +2,7 @@
 
 > Single source of truth for development scope, implementation progress and acceptance.
 > Updated: 2026-11-27 (Asia/Bangkok).
-> Current merged application version: **0.2.1**. CI portable and installer artifacts are available; no public release/tag has been verified.
+> Current merged application version: **0.3.0**. CI portable and installer artifacts are available; no public release/tag has been verified.
 
 ## Working agreement
 
@@ -69,22 +69,31 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 
 ## v0.3.0 — Advanced Capture
 
-- [ ] Introduce capture request/result model, capture modes and consistent error handling.
+- [x] Introduce capture request/result model, capture modes and consistent error handling.
 - [ ] Capture active window and selectable window with hover highlight; exclude own UI.
 - [ ] Full-screen capture (current monitor) and all-monitor capture with negative coordinates and mixed DPI.
-- [ ] Delayed capture (3/5/10 seconds), cancellation and non-blocking countdown.
-- [ ] Repeat last capture region with monitor topology validation.
+- [x] Implement delayed capture (3/5/10 seconds), cancellation and non-blocking countdown.
+- [x] Implement repeat last capture region with monitor topology validation.
 - [ ] Improve window detection and fallback for unavailable/minimized/protected content; no bypass of OS restrictions.
 - [ ] Evaluate Windows Graphics Capture vs existing GDI backend; retain reliable fallback.
-- [ ] Add capture mode preferences, shortcuts, localized UI and tests.
+- [x] Add capture mode preferences, existing global shortcut integration, localized UI and tests.
 - [ ] Verify DPI, 4K, multi-monitor, cancellation and resource disposal; CI pass and merge.
 
-### v0.3.0 candidate — pending CI and merge
+### v0.3.0 — merged implementation
 
 - Implemented six capture modes, countdown cancellation, tray selection and settings.
 - Reused MIT Snapboard DWM bounds; see [THIRD_PARTY.md](docs/THIRD_PARTY.md).
 - Window capture captures visible desktop pixels only; covered windows may be included. Repeat stores coordinates/layout in memory for this session. Mixed-DPI and physical multi-monitor acceptance remain open.
-- Added four regression groups for geometry, layout, window hit order, settings and cancellation. Checkboxes remain open until verified merge.
+- Added four regression groups for geometry, layout, window hit order, settings and cancellation. CI build, regression runner and packaging passed; PR #3 merged.
+
+## v0.3.1 — Capture Engine Upgrade
+
+- [ ] Adapt MIT WGC implementation with bounded allocation, cancellation, timeout and resource disposal.
+- [ ] Select explicit HWND by window list; no silent desktop fallback.
+- [ ] Integrate WGC active/window selection and preserve GDI region/monitor capture.
+- [ ] Window thumbnails and live preview with bounded resource usage.
+- [ ] Verify actual occluded-window capture, GPU compatibility and mixed DPI on Windows.
+- [ ] Regression tests, CI and merge.
 
 ## v0.4.0 — OCR, Pin & History
 
@@ -145,6 +154,8 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 | 2026-11-27 | 0.2.0 | Core implementation and regression CI passed; merged; manual runtime acceptance open | PR #1 / 24e9f2e |
 | 2026-11-27 | 0.2.1 | Stabilization and branding implemented; all 11 regression groups and packaging CI passed; merged | PR #2 / 5879cc5 |
 
+| 2026-11-27 | 0.3.0 | Advanced Capture build, regression and packaging CI passed; merged | [PR #3](https://github.com/duongtuanvu/vusnap/pull/3) / 66e71da |
+
 ## Next task
 
-Next feature increment: v0.3.0 Advanced Capture, beginning with capture request/result model and current-monitor/full-window modes. Keep unresolved v0.2.x manual Windows acceptance and benchmarks visible as a parallel gate; do not mark them complete without evidence or release a production version with blocking defects.
+Next feature increment: v0.3.1 WGC window capture. Runtime acceptance remains open for earlier increments.
