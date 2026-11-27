@@ -159,3 +159,9 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 ## Next task
 
 Next feature increment: v0.3.1 WGC window capture. Runtime acceptance remains open for earlier increments.
+
+### GitHub Actions resource policy
+
+- CI runs on pull requests, main pushes and explicit dispatch; no automatic feature-branch duplicate run and no artifact upload. PR packaging remains a verification gate without storing binaries.
+- Preview build is manual, defaults to portable only, with optional installer and one-day artifact retention. Release remains tag-triggered; do not create tags merely to test.
+- Existing artifacts are not deleted automatically. Record CI evidence and merge only after required checks pass.
