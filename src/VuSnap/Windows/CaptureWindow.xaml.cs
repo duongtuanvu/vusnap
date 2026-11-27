@@ -178,6 +178,7 @@ public partial class CaptureWindow : Window
         _zoom = Math.Clamp(_cfg.DefaultZoom, 1.5, 10);
         _zoomSaveTimer.Tick += (_, _) => { _zoomSaveTimer.Stop(); SaveLensDefaults(); };
         _badgeTimer.Tick += (_, _) => { _badgeTimer.Stop(); if (_drag == Drag.None) SizeBadge.Visibility = Visibility.Collapsed; };
+        Closing += (_, e) => { if (_outputBusy && !IsEnabled) e.Cancel = true; };
         Closed += (_, _) => { _zoomSaveTimer.Stop(); _badgeTimer.Stop(); if (_zoomDirty) SaveLensDefaults(); };
         _lensRound = _cfg.DefaultLens != "Square";
         _font = string.IsNullOrWhiteSpace(_cfg.DefaultFont) ? "Segoe UI" : _cfg.DefaultFont;
@@ -2544,75 +2545,100 @@ public partial class CaptureWindow : Window
         return bmp;
     }
 
-    private static void CopyToClipboard(BitmapSource bmp)
+    private static async Task CopyToClipboardAsync(BitmapSource bmp)
     {
         for (var i = 0; ; i++)
         {
             try { System.Windows.Clipboard.SetImage(bmp); return; }
-            catch (COMException) when (i < 5) { Thread.Sleep(60); } // clipboard đang bị app khác giữ
+            catch (COMException) when (i < 5) { await Task.Delay(60); }
         }
     }
 
-    private static void SaveToFile(BitmapSource bmp, string path)
+    private static void SaveToFile(BitmapSource bmp, string path, bool overwrite)
     {
-        BitmapEncoder enc = System.IO.Path.GetExtension(path).Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+        var ext = System.IO.Path.GetExtension(path);
+        BitmapEncoder enc = ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
             ? new JpegBitmapEncoder { QualityLevel = 95 }
-            : new PngBitmapEncoder();
+            : ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
+                ? new PngBitmapEncoder() : throw new NotSupportedException("ERR_EXPORT_FORMAT");
         enc.Frames.Add(BitmapFrame.Create(bmp));
-        using var fs = File.Create(path);
-        enc.Save(fs);
+        AtomicFile.Write(path, stream => enc.Save(stream), overwrite);
+    }
+
+    private void ReportOutputError(string code, string message, Exception ex)
+    {
+        ErrorLog.Write(code, ex);
+        System.Windows.MessageBox.Show(this, $"[{code}] {message}", AppInfo.AppName);
+    }
+
+    private async Task OutputAsync(string? path, bool overwrite, bool copy)
+    {
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
+        _outputBusy = true;
+        IsEnabled = false;
+        string code = ErrorCodes.Render;
+        try
+        {
+            var bmp = RenderFinal();
+            if (path is not null)
+            {
+                code = ErrorCodes.Export;
+                await Task.Run(() => SaveToFile(bmp, path, overwrite));
+            }
+            if (copy)
+            {
+                code = ErrorCodes.Clipboard;
+                try { await CopyToClipboardAsync(bmp); }
+                catch (Exception ex) when (path is not null)
+                {
+                    ReportOutputError(code, Loc.Lang == "vi" ? "Ảnh đã lưu; không thể sao chép vào clipboard." : "Image saved; clipboard copy failed.", ex);
+                }
+            }
+            IsEnabled = true;
+            Close();
+        }
+        catch (Exception ex) { ReportOutputError(code, Loc.T(code == ErrorCodes.Clipboard ? "err.copy" : "err.save"), ex); }
+        finally { _outputBusy = false; IsEnabled = true; }
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e) => DoCopy();
-
-    private void DoCopy()
-    {
-        if (!_hasSel) return;
-        try { CopyToClipboard(RenderFinal()); Close(); }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.copy") + ex.Message, AppInfo.AppName); }
-    }
+    private async void DoCopy() => await OutputAsync(null, false, true);
 
     private void QuickSave_Click(object sender, RoutedEventArgs e) => DoQuickSave();
 
-    private void DoQuickSave()
+    private async void DoQuickSave()
     {
-        if (!_hasSel) return;
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
         try
         {
             var settings = SettingsService.Load();
-            var dir = string.IsNullOrWhiteSpace(settings.SaveDirectory)
-                ? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VuSnap")
-                : settings.SaveDirectory;
-            Directory.CreateDirectory(dir);
-            var ext = settings.DefaultFormat.Equals("JPG", StringComparison.OrdinalIgnoreCase) ? ".jpg" : ".png";
-            var path = System.IO.Path.Combine(dir, "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ext);
-            var bmp = RenderFinal();
-            SaveToFile(bmp, path);
-            if (settings.CopyAfterCapture) CopyToClipboard(bmp);
-            Close();
+            var ext = settings.DefaultFormat == "JPG" ? ".jpg" : ".png";
+            var path = AtomicFile.NewCapturePath(settings.SaveDirectory, ext, DateTime.Now);
+            await OutputAsync(path, false, settings.CopyAfterCapture);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.save") + ex.Message, AppInfo.AppName); }
+        catch (Exception ex) { ReportOutputError(ErrorCodes.Export, Loc.T("err.save"), ex); }
     }
 
-    private void SaveAs_Click(object sender, RoutedEventArgs e)
+    private async void SaveAs_Click(object sender, RoutedEventArgs e)
     {
-        if (!_hasSel) return;
-        var settings = SettingsService.Load();
-        var dialog = new SaveFileDialog
-        {
-            Title = Loc.T("dlg.saveTitle"), Filter = "PNG image|*.png|JPEG image|*.jpg", DefaultExt = ".png",
-            FileName = "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png",
-            InitialDirectory = Directory.Exists(settings.SaveDirectory) ? settings.SaveDirectory : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-        };
-        if (dialog.ShowDialog(this) != true) return;
+        if (!_hasSel || _outputBusy || _drag != Drag.None) return;
         try
         {
-            var bmp = RenderFinal();
-            SaveToFile(bmp, dialog.FileName);
-            if (settings.CopyAfterCapture) CopyToClipboard(bmp);
-            Close();
+            var settings = SettingsService.Load();
+            var jpg = settings.DefaultFormat == "JPG";
+            var dialog = new SaveFileDialog
+            {
+                Title = Loc.T("dlg.saveTitle"), Filter = "PNG image|*.png|JPEG image|*.jpg",
+                FilterIndex = jpg ? 2 : 1, DefaultExt = jpg ? ".jpg" : ".png",
+                FileName = "VuSnap_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff"),
+                OverwritePrompt = true, AddExtension = true,
+                InitialDirectory = Directory.Exists(settings.SaveDirectory) ? settings.SaveDirectory : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+            };
+            if (dialog.ShowDialog(this) != true) return;
+            await OutputAsync(dialog.FileName, true, settings.CopyAfterCapture);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(this, Loc.T("err.save") + ex.Message, AppInfo.AppName); }
+        catch (Exception ex) { ReportOutputError(ErrorCodes.Export, Loc.T("err.save"), ex); }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
@@ -2647,6 +2673,7 @@ public partial class CaptureWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        if (_outputBusy) { e.Handled = true; return; }
         if (e.OriginalSource is TextBox) return; // ô nhập chữ / hex tự xử lý phím
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;

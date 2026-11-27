@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,3 +18,6 @@ jobs:
         run: dotnet restore VuSnap.sln
       - name: Build
         run: dotnet build VuSnap.sln -c Release --no-restore
+
+      - name: Run core regression tests
+        run: dotnet run --project tests/VuSnap.Core.Tests/VuSnap.Core.Tests.csproj -c Release

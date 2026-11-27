@@ -89,7 +89,7 @@ public partial class MainWindow : Window
         _source = HwndSource.FromHwnd(Hwnd);
         _source.AddHook(WndProc);
         if (!RegisterHotkey(_settings.Hotkey))
-            SetStatus(Loc.T("status.hotkeyFail"));
+        { ErrorLog.Write(ErrorCodes.Hotkey); SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("status.hotkeyFail")); }
     }
 
     private static uint ToWinMods(ModifierKeys m) =>
@@ -185,13 +185,18 @@ public partial class MainWindow : Window
         {
             _capturing = false;
             WindowState = WindowState.Normal;
-            SetStatus(Loc.T("status.captureError") + ex.Message);
+            ErrorLog.Write(ErrorCodes.Capture, ex);
+            SetStatus($"[{ErrorCodes.Capture}] " + Loc.T("status.captureError"));
         }
     }
 
     // ───────────────────────── Đồng bộ UI <-> settings ─────────────────────────
 
-    private void SaveSettings() { try { SettingsService.Save(_settings); } catch { } }
+    private bool SaveSettings()
+    {
+        try { SettingsService.Save(_settings); return true; }
+        catch (Exception ex) { ErrorLog.Write(ErrorCodes.SettingsWrite, ex); SetStatus($"[{ErrorCodes.SettingsWrite}]"); return false; }
+    }
 
     private void RefreshAll()
     {
@@ -644,6 +649,8 @@ public partial class MainWindow : Window
     private void ResetShortcuts_Click(object sender, RoutedEventArgs e)
     {
         _settings.Shortcuts = ShortcutHelper.Defaults();
+        foreach (var id in ShortcutHelper.ToolIds.Concat(ShortcutHelper.ActionIds))
+            if (ShortcutHelper.TryParse(_settings.Hotkey, out var gm, out var gk) && ShortcutHelper.TryParse(_settings.Shortcuts[id], out var m, out var k) && gm == m && gk == k) _settings.Shortcuts[id] = "";
         SaveSettings();
         BuildTable();
     }
@@ -969,14 +976,22 @@ public partial class MainWindow : Window
     {
         var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "JSON|*.json" };
         if (dlg.ShowDialog(this) != true) return;
-        if (SettingsService.Import(dlg.FileName) is not { } imported) { SetStatus(Loc.T("set.importFail")); return; }
+        if (SettingsService.Import(dlg.FileName) is not { } imported) { SetStatus($"[{ErrorCodes.SettingsInvalid}] " + Loc.T("set.importFail")); return; }
+        var previous = _settings;
         UnregisterHotkey();
+        if (!RegisterHotkey(imported.Hotkey))
+        {
+            RegisterHotkey(previous.Hotkey);
+            ErrorLog.Write(ErrorCodes.Hotkey);
+            SetStatus($"[{ErrorCodes.Hotkey}] " + Loc.T("status.hotkeyFail")); return;
+        }
         _settings = imported;
-        SaveSettings();
+        if (!SaveSettings())
+        {
+            _settings = previous; UnregisterHotkey(); RegisterHotkey(previous.Hotkey); return;
+        }
         AutoStart.Apply(_settings.StartWithWindows);
-        if (!RegisterHotkey(_settings.Hotkey)) SetStatus(Loc.T("status.hotkeyFail"));
-        else SetStatus(Loc.T("set.importOk"));
-        RefreshAll();
+        RefreshAll(); SetStatus(Loc.T("set.importOk"));
     }
 
     private void Reset_Click(object sender, RoutedEventArgs e)

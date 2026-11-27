@@ -1,10 +1,13 @@
 # Changelog
 
+## [0.2.0] - Unreleased
+
+- Bounded annotation state history with undo/redo for layer edits.
+- Validate settings and shortcut conflicts; atomic settings and image writes.
+- Unique quick-save paths, asynchronous encoding and clipboard retries.
+- Local rolling diagnostic logs without image content or exception messages.
+- Remove forced UI-thread garbage collection; add core regression runner in Windows CI.
+
 ## [0.1.0] - 2026-11-27
 
-- Initialize VuSnap, based on NinoMark v0.5.0.
-- Rename application, solution, namespace, installer, package and configuration identity.
-- Isolate settings and startup registry entries from upstream.
-- Preserve MIT copyright and upstream changelog in `docs/UPSTREAM_CHANGELOG.md`.
-
-This is the independent source baseline; no release binaries have been published yet.
+- Initialize VuSnap from NinoMark v0.5.0; independent application identity and MIT attribution.
