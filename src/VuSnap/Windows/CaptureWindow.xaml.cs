@@ -84,8 +84,8 @@ public partial class CaptureWindow : Window
         Cursors.SizeNWSE, Cursors.SizeNS, Cursors.SizeNESW, Cursors.SizeWE,
     };
 
-    private const double HandleSize = 9;
-    private const double SvW = 226, SvH = 130;
+    private const double HandleSize = 11;
+    private const double SvW = 236, SvH = 96;
 
     private readonly BitmapSource _source;
     private readonly DrawingRectangle _screenBounds;
@@ -172,8 +172,8 @@ public partial class CaptureWindow : Window
             _handles[i] = new Ellipse
             {
                 Width = HandleSize, Height = HandleSize,
-                Fill = new SolidColorBrush(Color.FromRgb(10, 100, 255)),
-                Stroke = Brushes.White, StrokeThickness = 1.5,
+                Fill = new SolidColorBrush(Color.FromRgb(111, 109, 255)),
+                Stroke = Brushes.White, StrokeThickness = 2,
                 Visibility = Visibility.Collapsed, IsHitTestVisible = false,
             };
             Overlay.Children.Insert(1 + i, _handles[i]);
@@ -825,12 +825,13 @@ public partial class CaptureWindow : Window
             {
                 child.Content = null;
                 if (icon is FrameworkElement fe) { fe.HorizontalAlignment = HorizontalAlignment.Center; fe.VerticalAlignment = VerticalAlignment.Center; }
-                var grid = new Grid { Width = 40, Height = 40 };
+                var grid = new Grid { Width = 38, Height = 38 };
                 grid.Children.Add(icon);
                 if (showHint)
                     grid.Children.Add(new TextBlock
                     {
-                        Text = ShortcutHelper.Short(combo), FontSize = 9, Foreground = new SolidColorBrush(Color.FromRgb(170, 170, 170)),
+                        Text = ShortcutHelper.Short(combo), FontSize = 8.5, FontWeight = FontWeights.Bold,
+                        Foreground = new SolidColorBrush(Color.FromRgb(182, 193, 250)),
                         HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 3, 1),
                         IsHitTestVisible = false,
                     });
@@ -841,7 +842,7 @@ public partial class CaptureWindow : Window
                     {
                         Width = 15, Height = 15, Background = Brushes.Transparent, Cursor = Cursors.Hand,
                         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom,
-                        Child = new Path { Data = Geometry.Parse("M3,4 L10,4 L6.5,9 Z"), Fill = new SolidColorBrush(Color.FromRgb(170, 170, 170)) },
+                        Child = new Path { Data = Geometry.Parse("M3,4 L10,4 L6.5,9 Z"), Fill = new SolidColorBrush(Color.FromRgb(182, 193, 250)) },
                     };
                     // Handled = true để nút tool không bị bấm theo
                     chev.MouseLeftButtonDown += (_, e) => { ShowFlyout(child, kind); e.Handled = true; };
@@ -911,7 +912,18 @@ public partial class CaptureWindow : Window
         _bars.Add(ToolBar);
         for (var i = 0; i < 3; i++)
         {
-            var bar = new Border { Background = (Brush)FindResource("BarBrush"), Cursor = Cursors.Arrow, Visibility = Visibility.Collapsed, Child = new StackPanel() };
+            var bar = new Border
+            {
+                Background = (Brush)FindResource("BarBrush"),
+                BorderBrush = (Brush)FindResource("BarBorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(4),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 4, Opacity = 0.42 },
+                Cursor = Cursors.Arrow,
+                Visibility = Visibility.Collapsed,
+                Child = new StackPanel(),
+            };
             bar.MouseLeftButtonDown += Swallow;
             Overlay.Children.Add(bar);
             _bars.Add(bar);
@@ -1019,15 +1031,15 @@ public partial class CaptureWindow : Window
     private void AddFlyRow(string label, UIElement? preview, bool selected, Action pick)
     {
         var line = new StackPanel { Orientation = Orientation.Horizontal };
-        line.Children.Add(new TextBlock { Text = selected ? "✓" : "", Width = 16, Foreground = new SolidColorBrush(Color.FromRgb(10, 100, 255)), FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
+        line.Children.Add(new TextBlock { Text = selected ? "✓" : "", Width = 16, Foreground = new SolidColorBrush(Color.FromRgb(143, 168, 255)), FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
         if (preview is not null) line.Children.Add(preview);
-        line.Children.Add(new TextBlock { Text = label, Foreground = new SolidColorBrush(Color.FromRgb(30, 30, 30)), VerticalAlignment = VerticalAlignment.Center });
+        line.Children.Add(new TextBlock { Text = label, Foreground = new SolidColorBrush(Color.FromRgb(244, 246, 255)), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
         var row = new Border
         {
-            Padding = new Thickness(6, 5, 12, 5), Cursor = Cursors.Hand, CornerRadius = new CornerRadius(3), Child = line,
-            Background = selected ? new SolidColorBrush(Color.FromRgb(232, 240, 254)) : Brushes.Transparent,
+            Padding = new Thickness(8, 6, 12, 6), Cursor = Cursors.Hand, CornerRadius = new CornerRadius(8), Child = line,
+            Background = selected ? new SolidColorBrush(Color.FromArgb(80, 111, 109, 255)) : Brushes.Transparent,
         };
-        row.MouseEnter += (_, _) => { if (!selected) row.Background = new SolidColorBrush(Color.FromRgb(243, 244, 246)); };
+        row.MouseEnter += (_, _) => { if (!selected) row.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)); };
         row.MouseLeave += (_, _) => { if (!selected) row.Background = Brushes.Transparent; };
         row.MouseLeftButtonDown += (_, e) => { e.Handled = true; HideColorPanel(); pick(); };
         FlyList.Children.Add(row);
@@ -1036,9 +1048,10 @@ public partial class CaptureWindow : Window
     private static UIElement MakeStylePreview(string id)
     {
         var c = new Canvas { Width = 64, Height = 16, Margin = new Thickness(0, 0, 8, 0) };
+        var ink = new SolidColorBrush(Color.FromRgb(235, 240, 255));
         Line L(double y) => new()
         {
-            X1 = 2, X2 = 62, Y1 = y, Y2 = y, Stroke = Brushes.Black, StrokeThickness = 2.5,
+            X1 = 2, X2 = 62, Y1 = y, Y2 = y, Stroke = ink, StrokeThickness = 2.5,
             StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
         };
         if (id == "Double") { c.Children.Add(L(4.5)); c.Children.Add(L(11.5)); }
@@ -1049,17 +1062,19 @@ public partial class CaptureWindow : Window
     private static UIElement MakeCornerPreview(bool cornersOnly)
     {
         var box = new Canvas { Width = 30, Height = 18, Margin = new Thickness(17, 0, 25, 0) };
+        var ink = new SolidColorBrush(Color.FromRgb(235, 240, 255));
         box.Children.Add(cornersOnly
-            ? new Path { Data = Geometry.Parse("M1,7 V1 H8 M22,1 H29 V7 M29,11 V17 H22 M8,17 H1 V11"), Stroke = Brushes.Black, StrokeThickness = 2, StrokeLineJoin = PenLineJoin.Round }
-            : new Rectangle { Width = 30, Height = 18, Stroke = Brushes.Black, StrokeThickness = 2 });
+            ? new Path { Data = Geometry.Parse("M1,7 V1 H8 M22,1 H29 V7 M29,11 V17 H22 M8,17 H1 V11"), Stroke = ink, StrokeThickness = 2, StrokeLineJoin = PenLineJoin.Round }
+            : new Rectangle { Width = 30, Height = 18, Stroke = ink, StrokeThickness = 2 });
         return box;
     }
 
     private static UIElement MakeLineTypePreview(string id)
     {
         var c = new Canvas { Width = 64, Height = 22, Margin = new Thickness(0, 0, 8, 0) };
+        var ink = new SolidColorBrush(Color.FromRgb(235, 240, 255));
         var ann = new Ann { Kind = "Line", A = new Point(8, 11), B = new Point(56, 11), Thick = 2, LineType = id };
-        c.Children.Add(new Path { Data = LineGeo(ann), Stroke = Brushes.Black, StrokeThickness = 2, Fill = id == "Dots" ? Brushes.Black : null, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round });
+        c.Children.Add(new Path { Data = LineGeo(ann), Stroke = ink, StrokeThickness = 2, Fill = id == "Dots" ? ink : null, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round });
         return c;
     }
 
@@ -1313,9 +1328,10 @@ public partial class CaptureWindow : Window
     private static UIElement MakeArrowPreview(string id)
     {
         var c = new Canvas { Width = 64, Height = 22, Margin = new Thickness(0, 0, 8, 0) };
+        var ink = new SolidColorBrush(Color.FromRgb(235, 240, 255));
         var ann = new Ann { Kind = "Arrow", A = new Point(4, 6), B = new Point(60, 6), Thick = 2, Head = id };
-        var path = new Path { Data = ArrowGeometry(ann), Stroke = Brushes.Black, StrokeThickness = id == "Open" ? 1.8 : 1.4, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
-        if (id != "Open") path.Fill = Brushes.Black;
+        var path = new Path { Data = ArrowGeometry(ann), Stroke = ink, StrokeThickness = id == "Open" ? 1.8 : 1.4, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
+        if (id != "Open") path.Fill = ink;
         c.Children.Add(path);
         return c;
     }
@@ -1344,8 +1360,8 @@ public partial class CaptureWindow : Window
             var color = c;
             var dot = new Ellipse
             {
-                Width = size, Height = size, Margin = new Thickness(2), Cursor = Cursors.Hand, Tag = color,
-                Fill = Frozen(color), Stroke = new SolidColorBrush(Color.FromArgb(70, 0, 0, 0)), StrokeThickness = 1,
+                Width = size, Height = size, Margin = new Thickness(3), Cursor = Cursors.Hand, Tag = color,
+                Fill = Frozen(color), Stroke = new SolidColorBrush(Color.FromArgb(95, 255, 255, 255)), StrokeThickness = 1,
             };
             dot.MouseLeftButtonDown += (_, e) => { SetColor(color); e.Handled = true; };
             host.Children.Add(dot);
@@ -1404,7 +1420,7 @@ public partial class CaptureWindow : Window
                     if (child is Ellipse el)
                     {
                         var on = (Color)el.Tag == _color;
-                        el.Stroke = on ? new SolidColorBrush(Color.FromRgb(10, 100, 255)) : new SolidColorBrush(Color.FromArgb(70, 0, 0, 0));
+                        el.Stroke = on ? new SolidColorBrush(Color.FromRgb(115, 150, 254)) : new SolidColorBrush(Color.FromArgb(95, 255, 255, 255));
                         el.StrokeThickness = on ? 2.5 : 1;
                     }
         }
@@ -1909,8 +1925,8 @@ public partial class CaptureWindow : Window
             var visible = el.Visibility == Visibility.Visible;
             var row = new Border
             {
-                Padding = new Thickness(4, 4, 6, 4), Cursor = Cursors.Hand,
-                Background = _selection.Contains(el) ? new SolidColorBrush(Color.FromRgb(10, 80, 200)) : Brushes.Transparent,
+                Padding = new Thickness(6, 5, 8, 5), Margin = new Thickness(0, 1, 0, 1), CornerRadius = new CornerRadius(8), Cursor = Cursors.Hand,
+                Background = _selection.Contains(el) ? (Brush)FindResource("ActiveBrush") : Brushes.Transparent,
             };
             var line = new StackPanel { Orientation = Orientation.Horizontal };
 
@@ -1952,9 +1968,9 @@ public partial class CaptureWindow : Window
         var a = (Ann)el.Tag;
         var box = new TextBox
         {
-            Text = LayerName(el), Width = 150, Padding = new Thickness(2, 0, 2, 0),
-            Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), Foreground = Brushes.White, CaretBrush = Brushes.White,
-            BorderBrush = new SolidColorBrush(Color.FromRgb(10, 100, 255)),
+            Text = LayerName(el), Width = 150, Padding = new Thickness(4, 1, 4, 1), MinHeight = 24,
+            Background = new SolidColorBrush(Color.FromRgb(30, 35, 60)), Foreground = Brushes.White, CaretBrush = Brushes.White,
+            BorderBrush = new SolidColorBrush(Color.FromRgb(115, 150, 254)),
         };
         var done = false;
         void Finish(bool save)

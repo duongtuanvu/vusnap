@@ -8,24 +8,29 @@
         KeyDown="Window_KeyDown">
   <Window.Resources>
     <Style x:Key="MIcon" TargetType="mi:MaterialIcon">
-      <Setter Property="Width" Value="22"/><Setter Property="Height" Value="22"/><Setter Property="Foreground" Value="White"/>
+      <Setter Property="Width" Value="20"/><Setter Property="Height" Value="20"/><Setter Property="Foreground" Value="#FFF4F6FF"/>
       <Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
-    <SolidColorBrush x:Key="BarBrush" Color="#FF262626"/>
-    <SolidColorBrush x:Key="HoverBrush" Color="#FF3A3A3A"/>
-    <SolidColorBrush x:Key="ActiveBrush" Color="#FF000000"/>
+    <SolidColorBrush x:Key="BarBrush" Color="#EB161A2E"/>
+    <SolidColorBrush x:Key="BarBorderBrush" Color="#42B6C1FA"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="#FF262C4E"/>
+    <LinearGradientBrush x:Key="ActiveBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#FF6F6DFF" Offset="0"/>
+      <GradientStop Color="#FF7396FE" Offset="1"/>
+    </LinearGradientBrush>
 
-    <!-- Nút trên toolbar: ToggleButton phẳng, nền tối -->
+    <!-- Nút trên toolbar: ToggleButton bo tròn phong cách Studio Dark Glass -->
     <Style x:Key="BarButton" TargetType="ToggleButton">
-      <Setter Property="Width" Value="40"/>
-      <Setter Property="Height" Value="40"/>
-      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Width" Value="38"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Margin" Value="1"/>
+      <Setter Property="Foreground" Value="#FFF4F6FF"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Focusable" Value="False"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="ToggleButton">
-            <Border x:Name="Bd" Background="Transparent">
+            <Border x:Name="Bd" Background="Transparent" CornerRadius="10">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -37,19 +42,21 @@
       </Setter>
     </Style>
     <Style x:Key="ActionButton" TargetType="Button">
-      <Setter Property="Width" Value="40"/>
-      <Setter Property="Height" Value="40"/>
-      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Width" Value="38"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Margin" Value="1"/>
+      <Setter Property="Foreground" Value="#FFF4F6FF"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Focusable" Value="False"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="Bd" Background="Transparent">
+            <Border x:Name="Bd" Background="Transparent" CornerRadius="10">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}"/></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.8"/></Trigger>
               <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.35"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -57,27 +64,27 @@
       </Setter>
     </Style>
     <Style x:Key="Icon" TargetType="Path">
-      <Setter Property="Stroke" Value="White"/>
+      <Setter Property="Stroke" Value="#FFF4F6FF"/>
       <Setter Property="StrokeThickness" Value="1.8"/>
       <Setter Property="StrokeLineJoin" Value="Round"/>
       <Setter Property="StrokeStartLineCap" Value="Round"/>
       <Setter Property="StrokeEndLineCap" Value="Round"/>
-      <Setter Property="Width" Value="22"/>
-      <Setter Property="Height" Value="22"/>
+      <Setter Property="Width" Value="20"/>
+      <Setter Property="Height" Value="20"/>
       <Setter Property="Stretch" Value="None"/>
     </Style>
     <Style x:Key="Glyph" TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
       <Setter Property="FontSize" Value="18"/>
-      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Foreground" Value="#FFF4F6FF"/>
     </Style>
   </Window.Resources>
 
   <Grid x:Name="Root" Background="Black"
         MouseLeftButtonDown="Root_MouseLeftButtonDown" MouseMove="Root_MouseMove" MouseLeftButtonUp="Root_MouseLeftButtonUp" MouseLeave="Root_MouseLeave" MouseWheel="Root_MouseWheel">
     <Image x:Name="Screenshot" Stretch="Fill" IsHitTestVisible="False"/>
-    <!-- Lớp phủ tối, khoét lỗ ở vùng chọn -->
-    <Path x:Name="Dim" Fill="#99000000" IsHitTestVisible="False"/>
+    <!-- Lớp phủ tối Indigo-Night, khoét lỗ ở vùng chọn -->
+    <Path x:Name="Dim" Fill="#96121424" IsHitTestVisible="False"/>
 
     <!-- Annotation: tọa độ theo cửa sổ, bị cắt theo vùng chọn -->
     <Canvas x:Name="AnnotationHost" Background="Transparent">
@@ -86,32 +93,34 @@
     </Canvas>
 
     <Canvas x:Name="Overlay">
-      <Rectangle x:Name="Selection" Stroke="#FF0A64FF" StrokeThickness="1" StrokeDashArray="3 2" Visibility="Collapsed" IsHitTestVisible="False"/>
-      <Rectangle x:Name="AnnOutline" Stroke="#FF0A64FF" StrokeThickness="1" StrokeDashArray="4 3" Visibility="Collapsed" IsHitTestVisible="False"/>
+      <Rectangle x:Name="Selection" Stroke="#FF7396FE" StrokeThickness="1.5" StrokeDashArray="4 2.5" Visibility="Collapsed" IsHitTestVisible="False"/>
+      <Rectangle x:Name="AnnOutline" Stroke="#FF7396FE" StrokeThickness="1.5" StrokeDashArray="4 3" Visibility="Collapsed" IsHitTestVisible="False"/>
 
       <!-- Thanh thao tác nhanh gần object đang chọn -->
-      <Border x:Name="ObjBar" Background="{StaticResource BarBrush}" CornerRadius="4" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+      <Border x:Name="ObjBar" Background="{StaticResource BarBrush}" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="3" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+        <Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.4"/></Border.Effect>
         <StackPanel Orientation="Horizontal">
-          <Button x:Name="DupButton" Style="{StaticResource ActionButton}" Width="34" Height="34" Click="Dup_Click">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentDuplicate" Width="20" Height="20"/>
+          <Button x:Name="DupButton" Style="{StaticResource ActionButton}" Width="32" Height="32" Click="Dup_Click">
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentDuplicate" Width="18" Height="18"/>
           </Button>
-          <Button x:Name="RotateButton" Style="{StaticResource ActionButton}" Width="34" Height="34" Click="Rotate_Click">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="RotateRight" Width="20" Height="20"/>
+          <Button x:Name="RotateButton" Style="{StaticResource ActionButton}" Width="32" Height="32" Click="Rotate_Click">
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="RotateRight" Width="18" Height="18"/>
           </Button>
-          <Button x:Name="FlipHButton" Style="{StaticResource ActionButton}" Width="34" Height="34" Click="FlipH_Click">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="FlipHorizontal" Width="20" Height="20"/>
+          <Button x:Name="FlipHButton" Style="{StaticResource ActionButton}" Width="32" Height="32" Click="FlipH_Click">
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="FlipHorizontal" Width="18" Height="18"/>
           </Button>
-          <Button x:Name="FlipVButton" Style="{StaticResource ActionButton}" Width="34" Height="34" Click="FlipV_Click">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="FlipVertical" Width="20" Height="20"/>
+          <Button x:Name="FlipVButton" Style="{StaticResource ActionButton}" Width="32" Height="32" Click="FlipV_Click">
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="FlipVertical" Width="18" Height="18"/>
           </Button>
-          <Button x:Name="ObjDeleteButton" Style="{StaticResource ActionButton}" Width="34" Height="34" Click="LayerDelete_Click">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="DeleteOutline" Width="20" Height="20"/>
+          <Button x:Name="ObjDeleteButton" Style="{StaticResource ActionButton}" Width="32" Height="32" Click="LayerDelete_Click">
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="DeleteOutline" Foreground="#FFFF8B9D" Width="18" Height="18"/>
           </Button>
         </StackPanel>
       </Border>
 
-      <!-- Toolbar dọc -->
-      <Border x:Name="ToolBar" Background="{StaticResource BarBrush}" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+      <!-- Toolbar nổi -->
+      <Border x:Name="ToolBar" Background="{StaticResource BarBrush}" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="14" Padding="4" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.42"/></Border.Effect>
         <StackPanel x:Name="ToolPanel">
           <ToggleButton Style="{StaticResource BarButton}" Tag="Select" Click="Tool_Click" ToolTip="Chọn / di chuyển layer (V)">
             <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="CursorMove"/>
@@ -138,7 +147,7 @@
             <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="FormatColorHighlight" Foreground="#FFFFE600"/>
           </ToggleButton>
           <ToggleButton Style="{StaticResource BarButton}" Tag="Blur" Click="Tool_Click" ToolTip="Làm mờ / pixelate (B)">
-            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Blur" Foreground="#FF4C9AFF"/>
+            <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Blur" Foreground="#FF8CECE4"/>
           </ToggleButton>
           <ToggleButton Style="{StaticResource BarButton}" Tag="Invert" Click="Tool_Click" ToolTip="Tương phản / đảo màu vùng chọn (I)">
             <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="InvertColors"/>
@@ -153,16 +162,16 @@
             <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="MagnifyPlusOutline"/>
           </ToggleButton>
           <Button x:Name="RatioButton" Style="{StaticResource ActionButton}" Click="Ratio_Click">
-            <Grid Width="40" Height="40">
+            <Grid Width="38" Height="38">
               <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="AspectRatio"/>
-              <TextBlock x:Name="RatioLabel" FontSize="9" Foreground="#FFAAAAAA" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,3,1" IsHitTestVisible="False"/>
+              <TextBlock x:Name="RatioLabel" FontSize="8.5" Foreground="#FFB6C1FA" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,3,1" IsHitTestVisible="False"/>
             </Grid>
           </Button>
-          <Border Background="#FF000000" Width="40" Height="40">
+          <Border Background="Transparent" Width="40" Height="40">
             <ToggleButton x:Name="ColorButton" Style="{StaticResource BarButton}" Click="ColorButton_Click" ToolTip="Chọn màu, nét vẽ" Background="Transparent">
-              <Grid Width="26" Height="26">
+              <Grid Width="24" Height="24">
                 <Ellipse Fill="White"/>
-                <Ellipse x:Name="ColorDot" Fill="Red" Width="8" Height="8"/>
+                <Ellipse x:Name="ColorDot" Fill="#FFFF3B5C" Width="10" Height="10"/>
               </Grid>
             </ToggleButton>
           </Border>
@@ -179,76 +188,121 @@
       </Border>
 
       <!-- Thanh action dưới -->
-      <Border x:Name="ActionBar" Background="{StaticResource BarBrush}" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+      <Border x:Name="ActionBar" Background="{StaticResource BarBrush}" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="14" Padding="4" Visibility="Collapsed" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.42"/></Border.Effect>
         <StackPanel x:Name="ActionPanel" Orientation="Horizontal">
-          <Button Style="{StaticResource ActionButton}" Click="Close_Click" ToolTip="Hủy (Esc)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Close" Width="20" Height="20"/></Button>
+          <Button Style="{StaticResource ActionButton}" Click="Close_Click" ToolTip="Hủy (Esc)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Close" Foreground="#FFFF8B9D" Width="19" Height="19"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="SaveAs_Click" ToolTip="Lưu thành..."><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentSaveEdit"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="QuickSave_Click" ToolTip="Lưu nhanh vào thư mục ảnh (Ctrl+S)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentSave"/></Button>
           <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Copy (Ctrl+C)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ContentCopy"/></Button>
-          <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Hoàn tất &amp; copy (Enter)"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Check" Foreground="#FF22C55E" Width="24" Height="24"/></Button>
-          <Button Style="{StaticResource ActionButton}" Click="Ocr_Click" ToolTip="OCR"><TextBlock Text="OCR" FontSize="11" FontWeight="Bold"/></Button>
-          <Button Style="{StaticResource ActionButton}" Click="ColorInspect_Click" ToolTip="Color picker"><TextBlock Text="RGB" FontSize="11" FontWeight="Bold"/></Button>
-          <Button Style="{StaticResource ActionButton}" Click="Barcode_Click" ToolTip="QR / Barcode"><TextBlock Text="QR" FontSize="12" FontWeight="Bold"/></Button>
+          <Button Style="{StaticResource ActionButton}" Click="Copy_Click" ToolTip="Hoàn tất &amp; copy (Enter)">
+            <Border Width="30" Height="30" CornerRadius="9" Background="#FF10B981">
+              <mi:MaterialIcon Style="{StaticResource MIcon}" Kind="Check" Foreground="White" Width="19" Height="19"/>
+            </Border>
+          </Button>
+          <Button Style="{StaticResource ActionButton}" Click="Ocr_Click" ToolTip="OCR">
+            <Border Padding="5,2" CornerRadius="6" Background="#FF242A4B" BorderBrush="#40B6ECEB" BorderThickness="1">
+              <TextBlock Text="OCR" FontSize="10" FontWeight="Bold" Foreground="#FFB6ECEB"/>
+            </Border>
+          </Button>
+          <Button Style="{StaticResource ActionButton}" Click="ColorInspect_Click" ToolTip="Color picker">
+            <Border Padding="5,2" CornerRadius="6" Background="#FF242A4B" BorderBrush="#407396FE" BorderThickness="1">
+              <TextBlock Text="RGB" FontSize="10" FontWeight="Bold" Foreground="#FF8FA8FF"/>
+            </Border>
+          </Button>
+          <Button Style="{StaticResource ActionButton}" Click="Barcode_Click" ToolTip="QR / Barcode">
+            <Border Padding="6,2" CornerRadius="6" Background="#FF242A4B" BorderBrush="#40B6ECEB" BorderThickness="1">
+              <TextBlock Text="QR" FontSize="10.5" FontWeight="Bold" Foreground="#FFB6ECEB"/>
+            </Border>
+          </Button>
         </StackPanel>
       </Border>
 
-      <!-- Bảng chọn màu + độ dày -->
-      <Border x:Name="ColorPanel" Background="White" Visibility="Collapsed" Padding="8,8,8,6" Cursor="Arrow" MouseLeftButtonDown="Swallow">
-        <Border.Effect><DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.35"/></Border.Effect>
-        <StackPanel Width="190">
+      <!-- Bảng chọn màu + độ dày (đồng bộ Dark Glass Studio) -->
+      <Border x:Name="ColorPanel" Background="#F2181C33" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="12" Visibility="Collapsed" Padding="10,10,10,8" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/></Border.Effect>
+        <StackPanel Width="196">
           <UniformGrid x:Name="Swatches" Rows="1"/>
           <Grid Margin="0,10,0,2">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="34"/></Grid.ColumnDefinitions>
             <Slider x:Name="SizeSlider" Minimum="1" Maximum="40" Value="3" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" ValueChanged="SizeSlider_Changed"/>
-            <TextBlock x:Name="SizeText" Grid.Column="1" Text="3" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#FF444444"/>
+            <TextBlock x:Name="SizeText" Grid.Column="1" Text="3" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#FFB6C1FA"/>
           </Grid>
         </StackPanel>
       </Border>
 
-      <Border x:Name="FlyPanel" Background="White" Visibility="Collapsed" Padding="4" Cursor="Arrow" MouseLeftButtonDown="Swallow">
-        <Border.Effect><DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.35"/></Border.Effect>
-        <StackPanel x:Name="FlyList" MinWidth="150"/>
+      <Border x:Name="FlyPanel" Background="#F2181C33" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="12" Visibility="Collapsed" Padding="6" Cursor="Arrow" MouseLeftButtonDown="Swallow">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/></Border.Effect>
+        <StackPanel x:Name="FlyList" MinWidth="165"/>
       </Border>
 
-      <Border x:Name="Loupe" Visibility="Collapsed" IsHitTestVisible="False" Background="#EE181818" CornerRadius="6"
-              BorderBrush="#FF0A64FF" BorderThickness="1" Padding="4">
+      <Border x:Name="Loupe" Visibility="Collapsed" IsHitTestVisible="False" Background="#F2161A2E" CornerRadius="12"
+              BorderBrush="#FF7396FE" BorderThickness="1.5" Padding="6">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45"/></Border.Effect>
         <StackPanel>
-          <Grid Width="136" Height="136">
-            <Rectangle x:Name="LoupeView" Width="136" Height="136"/>
-            <Rectangle Width="10" Height="10" Stroke="Black" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            <Rectangle Width="8" Height="8" Stroke="White" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Grid>
-          <StackPanel Orientation="Horizontal" Margin="0,5,0,1">
-            <Border x:Name="LoupeSwatch" Width="14" Height="14" BorderBrush="White" BorderThickness="1" Margin="0,0,6,0"/>
-            <TextBlock x:Name="LoupeText" Foreground="White" FontSize="11" FontFamily="Consolas" VerticalAlignment="Center"/>
+          <Border CornerRadius="8" ClipToBounds="True" Width="136" Height="136">
+            <Grid Width="136" Height="136">
+              <Rectangle x:Name="LoupeView" Width="136" Height="136"/>
+              <Rectangle Width="12" Height="12" Stroke="Black" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              <Rectangle Width="10" Height="10" Stroke="White" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,1">
+            <Border x:Name="LoupeSwatch" Width="14" Height="14" CornerRadius="4" BorderBrush="White" BorderThickness="1" Margin="0,0,7,0"/>
+            <TextBlock x:Name="LoupeText" Foreground="#FFF4F6FF" FontSize="11" FontFamily="Cascadia Mono, Consolas" VerticalAlignment="Center"/>
           </StackPanel>
         </StackPanel>
       </Border>
 
-      <Border x:Name="SizeBadge" Background="#CC000000" CornerRadius="3" Padding="6,2" Visibility="Collapsed" IsHitTestVisible="False">
-        <TextBlock x:Name="SizeBadgeText" Foreground="White" FontSize="12"/>
+      <Border x:Name="SizeBadge" Background="#EA161A2E" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="9" Padding="9,4" Visibility="Collapsed" IsHitTestVisible="False">
+        <TextBlock x:Name="SizeBadgeText" Foreground="#FFF4F6FF" FontFamily="Cascadia Mono, Consolas" FontSize="12" FontWeight="SemiBold"/>
       </Border>
     </Canvas>
 
-    <!-- Bảng thuộc tính bên phải -->
-    <Border x:Name="SidePanel" Width="250" HorizontalAlignment="Right" Background="{StaticResource BarBrush}" Visibility="Collapsed"
-            Cursor="Arrow" MouseLeftButtonDown="Swallow" TextElement.Foreground="#FFE5E5E5" TextElement.FontSize="12">
+    <!-- Bảng thuộc tính bên phải (Studio Dark Glass) -->
+    <Border x:Name="SidePanel" Width="264" HorizontalAlignment="Right" Background="#F5141729" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1,0,0,0" Visibility="Collapsed"
+            Cursor="Arrow" MouseLeftButtonDown="Swallow" TextElement.Foreground="#FFF4F6FF" TextElement.FontSize="12">
       <Border.Resources>
-        <!-- Kiểu tối cho các control trong bảng thuộc tính (trước đây dùng kiểu sáng mặc định) -->
-        <SolidColorBrush x:Key="PInput" Color="#FF1C1C1C"/>
-        <SolidColorBrush x:Key="PBorder" Color="#FF4A4A4A"/>
-        <SolidColorBrush x:Key="PText" Color="#FFE5E5E5"/>
-        <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{StaticResource PText}"/></Style>
+        <SolidColorBrush x:Key="PInput" Color="#FF1E233C"/>
+        <SolidColorBrush x:Key="PBorder" Color="#FF32395E"/>
+        <SolidColorBrush x:Key="PText" Color="#FFF4F6FF"/>
+        <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#FFF4F6FF"/></Style>
+        <Style TargetType="CheckBox">
+          <Setter Property="Foreground" Value="{StaticResource PText}"/>
+          <Setter Property="Cursor" Value="Hand"/>
+          <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="CheckBox">
+                <StackPanel Orientation="Horizontal" Background="Transparent">
+                  <Border x:Name="Box" Width="17" Height="17" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center"
+                          Background="#FF1E233C" BorderBrush="#FF32395E" BorderThickness="1.5">
+                    <Path x:Name="Tick" Data="M3.5,8.5 L7,12 L13.5,5" Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Visibility="Collapsed"/>
+                  </Border>
+                  <ContentPresenter VerticalAlignment="Center"/>
+                </StackPanel>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsChecked" Value="True">
+                    <Setter TargetName="Box" Property="Background" Value="{StaticResource ActiveBrush}"/>
+                    <Setter TargetName="Box" Property="BorderThickness" Value="0"/>
+                    <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                  </Trigger>
+                  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#FF7396FE"/></Trigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
+        </Style>
         <Style TargetType="ComboBoxItem">
           <Setter Property="Foreground" Value="{StaticResource PText}"/>
-          <Setter Property="Padding" Value="8,5"/>
+          <Setter Property="Padding" Value="9,6"/>
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="ComboBoxItem">
-                <Border x:Name="Bd" CornerRadius="4" Padding="{TemplateBinding Padding}" Background="Transparent"><ContentPresenter/></Border>
+                <Border x:Name="Bd" CornerRadius="6" Padding="{TemplateBinding Padding}" Background="Transparent"><ContentPresenter/></Border>
                 <ControlTemplate.Triggers>
-                  <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Bd" Property="Background" Value="#FF3A3A3A"/></Trigger>
-                  <Trigger Property="IsSelected" Value="True"><Setter TargetName="Bd" Property="Background" Value="#FF0A64FF"/></Trigger>
+                  <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Bd" Property="Background" Value="#FF262C4E"/></Trigger>
+                  <Trigger Property="IsSelected" Value="True"><Setter TargetName="Bd" Property="Background" Value="#FF6F6DFF"/></Trigger>
                 </ControlTemplate.Triggers>
               </ControlTemplate>
             </Setter.Value>
@@ -256,7 +310,7 @@
         </Style>
         <Style TargetType="ComboBox">
           <Setter Property="Foreground" Value="{StaticResource PText}"/>
-          <Setter Property="MinHeight" Value="26"/>
+          <Setter Property="MinHeight" Value="28"/>
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="ComboBox">
@@ -265,22 +319,22 @@
                                 IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                     <ToggleButton.Template>
                       <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bd" CornerRadius="5" Background="{StaticResource PInput}" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
-                          <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,9,0" Data="M0,0 L4,4 L8,0" Stroke="#FFCCCCCC" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        <Border x:Name="Bd" CornerRadius="8" Background="{StaticResource PInput}" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
+                          <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,9,0" Data="M0,0 L4,4 L8,0" Stroke="#FFB6C1FA" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="#FF0A64FF"/></Trigger>
+                          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="#FF7396FE"/></Trigger>
                         </ControlTemplate.Triggers>
                       </ControlTemplate>
                     </ToggleButton.Template>
                   </ToggleButton>
-                  <ContentPresenter IsHitTestVisible="False" Margin="8,0,26,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                  <ContentPresenter IsHitTestVisible="False" Margin="9,0,26,0" VerticalAlignment="Center" HorizontalAlignment="Left"
                                     Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                     TextElement.Foreground="{TemplateBinding Foreground}"/>
                   <Popup IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade" Placement="Bottom">
-                    <Border MinWidth="{Binding ActualWidth, ElementName=Toggle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,3,0,0" CornerRadius="6"
-                            Background="#FF2B2B2B" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
-                      <ScrollViewer Margin="2"><ItemsPresenter/></ScrollViewer>
+                    <Border MinWidth="{Binding ActualWidth, ElementName=Toggle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,3,0,0" CornerRadius="9"
+                            Background="#FF1C2038" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
+                      <ScrollViewer Margin="3"><ItemsPresenter/></ScrollViewer>
                     </Border>
                   </Popup>
                 </Grid>
@@ -293,14 +347,14 @@
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="ToggleButton">
-                <Border x:Name="Bd" CornerRadius="5" Background="#FF3A3A3A" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
+                <Border x:Name="Bd" CornerRadius="8" Background="#FF242945" BorderBrush="{StaticResource PBorder}" BorderThickness="1">
                   <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <ControlTemplate.Triggers>
-                  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.85"/></Trigger>
+                  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="#FF7396FE"/></Trigger>
                   <Trigger Property="IsChecked" Value="True">
-                    <Setter TargetName="Bd" Property="Background" Value="#FF0A64FF"/>
-                    <Setter TargetName="Bd" Property="BorderBrush" Value="#FF0A64FF"/>
+                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource ActiveBrush}"/>
+                    <Setter TargetName="Bd" Property="BorderThickness" Value="0"/>
                     <Setter Property="Foreground" Value="White"/>
                   </Trigger>
                 </ControlTemplate.Triggers>
@@ -311,77 +365,84 @@
       </Border.Resources>
       <Grid Margin="12">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="490" Padding="0,0,2,0">
         <StackPanel>
-          <TextBlock x:Name="PropsTitle" Text="Thuộc tính" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,10"/>
-          <Grid><TextBlock x:Name="PSizeLabel" Text="Độ dày nét / cỡ"/><TextBlock x:Name="PSizeText" Text="3" HorizontalAlignment="Right"/></Grid>
+          <TextBlock x:Name="PropsTitle" Text="Properties" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+          <Grid><TextBlock x:Name="PSizeLabel" Foreground="#FFB5BEE0" Text="Stroke width / size"/><TextBlock x:Name="PSizeText" Text="3" Foreground="#FF8FA8FF" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
           <Slider x:Name="PSizeSlider" Minimum="1" Maximum="40" Value="3" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="PSize_Changed"/>
-          <Grid Margin="0,6,0,0"><TextBlock x:Name="POpacityLabel" Text="Độ đậm (opacity)"/><TextBlock x:Name="POpacityText" Text="100%" HorizontalAlignment="Right"/></Grid>
+          <Grid Margin="0,4,0,0"><TextBlock x:Name="POpacityLabel" Foreground="#FFB5BEE0" Text="Opacity"/><TextBlock x:Name="POpacityText" Text="100%" Foreground="#FF8FA8FF" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
           <Slider x:Name="POpacitySlider" Minimum="5" Maximum="100" Value="100" ValueChanged="POpacity_Changed"/>
-          <TextBlock x:Name="PStyleLabel" Margin="0,6,0,3"/>
+          <TextBlock x:Name="PStyleLabel" Foreground="#FFB5BEE0" Margin="0,5,0,2"/>
           <ComboBox x:Name="PStyleBox" SelectionChanged="PStyle_Changed"/>
-          <TextBlock x:Name="PArrowLabel" Margin="0,6,0,3"/>
+          <TextBlock x:Name="PArrowLabel" Foreground="#FFB5BEE0" Margin="0,5,0,2"/>
           <ComboBox x:Name="PArrowBox" SelectionChanged="PArrow_Changed"/>
-          <TextBlock x:Name="PLineTypeLabel" Margin="0,6,0,3"/>
+          <TextBlock x:Name="PLineTypeLabel" Foreground="#FFB5BEE0" Margin="0,5,0,2"/>
           <ComboBox x:Name="PLineTypeBox" SelectionChanged="PLineType_Changed"/>
-          <CheckBox x:Name="PCornersBox" Margin="0,10,0,0" Click="PCorners_Click"/>
-          <TextBlock x:Name="PFontLabel" Margin="0,6,0,3"/>
+          <CheckBox x:Name="PCornersBox" Margin="0,8,0,0" Click="PCorners_Click"/>
+          <TextBlock x:Name="PFontLabel" Foreground="#FFB5BEE0" Margin="0,5,0,2"/>
           <Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <ComboBox x:Name="PFontBox" DropDownOpened="PFont_DropDownOpened" SelectionChanged="PFont_Changed"/>
-            <ComboBox x:Name="PWeightBox" Grid.Column="1" Width="86" Margin="4,0,0,0" SelectionChanged="PWeight_Changed"/>
-            <ToggleButton x:Name="PItalicButton" Style="{StaticResource PanelToggle}" Grid.Column="2" Content="I" FontStyle="Italic" Width="30" Margin="4,0,0,0" Focusable="False" Click="PItalic_Click"/>
+            <ComboBox x:Name="PWeightBox" Grid.Column="1" Width="96" Margin="4,0,0,0" SelectionChanged="PWeight_Changed"/>
+            <ToggleButton x:Name="PItalicButton" Style="{StaticResource PanelToggle}" Grid.Column="2" Content="I" FontStyle="Italic" Width="28" Margin="4,0,0,0" Focusable="False" Click="PItalic_Click"/>
           </Grid>
-          <TextBlock x:Name="PColorLabel" Text="Màu" Margin="0,8,0,4"/>
-          <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <Border x:Name="PColorSwatch" Width="24" Height="24" CornerRadius="3" BorderBrush="#66FFFFFF" BorderThickness="1" HorizontalAlignment="Left"/>
-            <TextBox x:Name="PHex" Grid.Column="1" Text="#FF0000" Background="#FF1A1A1A" Foreground="White" BorderBrush="#FF444444" Padding="4,3" KeyDown="PHex_KeyDown" LostFocus="PHex_LostFocus"/>
+          <TextBlock x:Name="PColorLabel" Foreground="#FFB5BEE0" Text="Color" Margin="0,7,0,3"/>
+          <Grid Margin="0,0,0,6">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border x:Name="PColorSwatch" Width="26" Height="26" CornerRadius="7" BorderBrush="#66FFFFFF" BorderThickness="1" HorizontalAlignment="Left"/>
+            <TextBox x:Name="PHex" Grid.Column="1" Text="#FF0000" Background="#FF1E233C" Foreground="White" BorderBrush="#FF32395E" Padding="8,3" MinHeight="26" KeyDown="PHex_KeyDown" LostFocus="PHex_LostFocus"/>
           </Grid>
-          <Grid x:Name="SvBox" Width="226" Height="130" Background="Red" Cursor="Cross" MouseLeftButtonDown="Sv_Down" MouseMove="Sv_Move" MouseLeftButtonUp="Sv_Up">
-            <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#FFFFFFFF" Offset="0"/><GradientStop Color="#00FFFFFF" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
-            <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0"/><GradientStop Color="#FF000000" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
-            <Canvas IsHitTestVisible="False"><Ellipse x:Name="SvMarker" Width="12" Height="12" Stroke="White" StrokeThickness="2"/></Canvas>
-          </Grid>
-          <Grid x:Name="HueBar" Width="226" Height="16" Margin="0,8,0,0" Cursor="Hand" MouseLeftButtonDown="Hue_Down" MouseMove="Hue_Move" MouseLeftButtonUp="Hue_Up">
-            <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-              <GradientStop Color="#FFFF0000" Offset="0"/><GradientStop Color="#FFFFFF00" Offset="0.1667"/><GradientStop Color="#FF00FF00" Offset="0.3333"/>
-              <GradientStop Color="#FF00FFFF" Offset="0.5"/><GradientStop Color="#FF0000FF" Offset="0.6667"/><GradientStop Color="#FFFF00FF" Offset="0.8333"/><GradientStop Color="#FFFF0000" Offset="1"/>
-            </LinearGradientBrush></Rectangle.Fill></Rectangle>
-            <Canvas IsHitTestVisible="False"><Rectangle x:Name="HueMarker" Width="4" Height="16" Fill="White" Stroke="Black" StrokeThickness="1"/></Canvas>
-          </Grid>
-          <WrapPanel x:Name="PSwatches" Margin="0,8,0,0"/>
+          <Border CornerRadius="10" ClipToBounds="True" BorderBrush="#FF32395E" BorderThickness="1" HorizontalAlignment="Left">
+            <Grid x:Name="SvBox" Width="236" Height="96" Background="Red" Cursor="Cross" MouseLeftButtonDown="Sv_Down" MouseMove="Sv_Move" MouseLeftButtonUp="Sv_Up">
+              <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#FFFFFFFF" Offset="0"/><GradientStop Color="#00FFFFFF" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+              <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#00000000" Offset="0"/><GradientStop Color="#FF000000" Offset="1"/></LinearGradientBrush></Rectangle.Fill></Rectangle>
+              <Canvas IsHitTestVisible="False"><Ellipse x:Name="SvMarker" Width="12" Height="12" Stroke="White" StrokeThickness="2"/></Canvas>
+            </Grid>
+          </Border>
+          <Border CornerRadius="6" ClipToBounds="True" Margin="0,7,0,0" HorizontalAlignment="Left">
+            <Grid x:Name="HueBar" Width="236" Height="14" Cursor="Hand" MouseLeftButtonDown="Hue_Down" MouseMove="Hue_Move" MouseLeftButtonUp="Hue_Up">
+              <Rectangle><Rectangle.Fill><LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#FFFF0000" Offset="0"/><GradientStop Color="#FFFFFF00" Offset="0.1667"/><GradientStop Color="#FF00FF00" Offset="0.3333"/>
+                <GradientStop Color="#FF00FFFF" Offset="0.5"/><GradientStop Color="#FF0000FF" Offset="0.6667"/><GradientStop Color="#FFFF00FF" Offset="0.8333"/><GradientStop Color="#FFFF0000" Offset="1"/>
+              </LinearGradientBrush></Rectangle.Fill></Rectangle>
+              <Canvas IsHitTestVisible="False"><Rectangle x:Name="HueMarker" Width="5" Height="14" RadiusX="2" RadiusY="2" Fill="White" Stroke="#FF141729" StrokeThickness="1"/></Canvas>
+            </Grid>
+          </Border>
+          <WrapPanel x:Name="PSwatches" Margin="0,6,0,0"/>
 
           <!-- Lưới căn chỉnh -->
-          <CheckBox x:Name="PGridBox" Margin="0,14,0,0" Click="PGrid_Click"/>
-          <StackPanel x:Name="PGridOptions" Visibility="Collapsed" Margin="0,6,0,0">
-            <Grid><TextBlock x:Name="PGridSizeLabel"/><TextBlock x:Name="PGridSizeText" HorizontalAlignment="Right"/></Grid>
+          <CheckBox x:Name="PGridBox" Margin="0,10,0,0" Click="PGrid_Click"/>
+          <StackPanel x:Name="PGridOptions" Visibility="Collapsed" Margin="0,5,0,0">
+            <Grid><TextBlock x:Name="PGridSizeLabel" Foreground="#FFB5BEE0"/><TextBlock x:Name="PGridSizeText" Foreground="#FF8FA8FF" FontWeight="Bold" HorizontalAlignment="Right"/></Grid>
             <Slider x:Name="PGridSizeSlider" Minimum="5" Maximum="100" Value="20" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="PGridSize_Changed"/>
-            <TextBlock x:Name="PGridTypeLabel" Margin="0,6,0,3"/>
+            <TextBlock x:Name="PGridTypeLabel" Foreground="#FFB5BEE0" Margin="0,5,0,2"/>
             <ComboBox x:Name="PGridTypeBox" SelectionChanged="PGridType_Changed"/>
           </StackPanel>
         </StackPanel>
+        </ScrollViewer>
 
         <Grid Grid.Row="1" Margin="0,12,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
           <DockPanel>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-              <Button Style="{StaticResource ActionButton}" Width="30" Height="28" Click="LayerDelete_Click" x:Name="LayerDeleteButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="DeleteOutline" Width="18" Height="18"/></Button>
-              <Button Style="{StaticResource ActionButton}" Width="30" Height="28" Click="LayerUp_Click" x:Name="LayerUpButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ArrowUp" Width="18" Height="18"/></Button>
-              <Button Style="{StaticResource ActionButton}" Width="30" Height="28" Click="LayerDown_Click" x:Name="LayerDownButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ArrowDown" Width="18" Height="18"/></Button>
+              <Button Style="{StaticResource ActionButton}" Width="28" Height="28" Click="LayerDelete_Click" x:Name="LayerDeleteButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="DeleteOutline" Foreground="#FFFF8B9D" Width="17" Height="17"/></Button>
+              <Button Style="{StaticResource ActionButton}" Width="28" Height="28" Click="LayerUp_Click" x:Name="LayerUpButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ArrowUp" Width="17" Height="17"/></Button>
+              <Button Style="{StaticResource ActionButton}" Width="28" Height="28" Click="LayerDown_Click" x:Name="LayerDownButton"><mi:MaterialIcon Style="{StaticResource MIcon}" Kind="ArrowDown" Width="17" Height="17"/></Button>
             </StackPanel>
-            <TextBlock x:Name="LayersTitle" Text="Layer" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock x:Name="LayersTitle" Text="Layers" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
           </DockPanel>
-          <Border Grid.Row="1" Background="#FF1A1A1A" Margin="0,6,0,0">
+          <Border Grid.Row="1" Background="#FF1A1E36" BorderBrush="#FF2D3456" BorderThickness="1" CornerRadius="10" Margin="0,6,0,0" Padding="4">
             <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="LayerList"/></ScrollViewer>
           </Border>
         </Grid>
 
-        <Button x:Name="PanelCloseButton" Grid.Row="2" Content="Đóng" Margin="0,10,0,0" Padding="0,5" Click="Panel_Click" Focusable="False"/>
+        <Button x:Name="PanelCloseButton" Grid.Row="2" Content="Close" Margin="0,10,0,0" Height="34" Background="#FF242945" Foreground="#FFF4F6FF" BorderBrush="#FF32395E" BorderThickness="1" Click="Panel_Click" Focusable="False"/>
       </Grid>
     </Border>
 
-    <Border x:Name="Hint" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#DD111827" CornerRadius="8" Padding="12,7" Margin="0,18,0,0" IsHitTestVisible="False">
-      <TextBlock x:Name="HintText" Foreground="White" Text="Kéo để chọn vùng  ·  Esc để hủy"/>
+    <Border x:Name="Hint" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#EA161A2E" BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1" CornerRadius="11" Padding="14,7" Margin="0,18,0,0" IsHitTestVisible="False">
+      <Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.38"/></Border.Effect>
+      <TextBlock x:Name="HintText" Foreground="#FFF4F6FF" FontWeight="SemiBold" Text="Drag to select an area  ·  Esc to cancel"/>
     </Border>
   </Grid>
 </Window>
