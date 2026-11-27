@@ -12,6 +12,7 @@ using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Win32;
 using VuSnap.Models;
+using CaptureMode = VuSnap.Models.CaptureMode;
 using VuSnap.Core;
 using VuSnap.Services;
 using Color = System.Windows.Media.Color;
@@ -88,6 +89,11 @@ public partial class CaptureWindow : Window
 
     private readonly BitmapSource _source;
     private readonly DrawingRectangle _screenBounds;
+    private readonly CaptureMode _captureMode;
+    private readonly DrawingRectangle? _initialRegion;
+    private readonly IReadOnlyList<DrawingRectangle> _windowTargets;
+    private bool _pickingWindow;
+    public event Action<DrawingRectangle>? OutputCompleted;
     private readonly Ellipse[] _handles = new Ellipse[8];
     private readonly CommandHistory<LayerState[]> _history = new(Array.Empty<LayerState>(), 50, new LayerStateComparer());
     private bool _restoringHistory;
@@ -144,12 +150,16 @@ public partial class CaptureWindow : Window
     private TextBox? _editor;             // ô nhập chữ đang mở
     private bool _svDrag, _hueDrag;
 
-    public CaptureWindow(BitmapSource source, DrawingRectangle screenBounds)
+    public CaptureWindow(BitmapSource source, DrawingRectangle screenBounds, CaptureMode mode = CaptureMode.Region, IReadOnlyList<DrawingRectangle>? windows = null, DrawingRectangle? initialRegion = null)
     {
         Loc.Lang = _cfg.Language;
         InitializeComponent();
         _source = source;
         _screenBounds = screenBounds;
+        _captureMode = mode;
+        _initialRegion = initialRegion;
+        _windowTargets = windows ?? Array.Empty<DrawingRectangle>();
+        _pickingWindow = mode == CaptureMode.WindowPicker;
         Screenshot.Source = source;
         _loupeBrush = new ImageBrush(source) { Stretch = Stretch.Fill };
         RenderOptions.SetBitmapScalingMode(_loupeBrush, BitmapScalingMode.NearestNeighbor);
@@ -201,7 +211,7 @@ public partial class CaptureWindow : Window
         // Window.Left/Top/Width/Height tính bằng DIP, còn Screen.Bounds là pixel -> đặt vị trí bằng Win32.
         DpiChanged += (_, _) => PlaceOnMonitor();
         SizeChanged += (_, _) => { Ink.Width = Root.ActualWidth; Ink.Height = Root.ActualHeight; UpdateDim(); };
-        Loaded += (_, _) => { PlaceOnMonitor(); Activate(); Focus(); UpdateDim(); };
+        Loaded += (_, _) => { PlaceOnMonitor(); Activate(); Focus(); UpdateDim(); Dispatcher.BeginInvoke(InitializeCaptureMode, DispatcherPriority.Loaded); };
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -247,6 +257,11 @@ public partial class CaptureWindow : Window
     {
         if (_outputBusy || _drag != Drag.None) return;
         var p = e.GetPosition(Root);
+        if (_pickingWindow)
+        {
+            if (TryWindowSelection(p, true)) e.Handled = true;
+            return;
+        }
         if (_editor is not null)
         {
             if (IsInside(e.OriginalSource, _editor)) return;
@@ -308,6 +323,7 @@ public partial class CaptureWindow : Window
     private void Root_MouseMove(object sender, MouseEventArgs e)
     {
         var p = e.GetPosition(Root);
+        if (_pickingWindow) { TryWindowSelection(p, false); return; }
         var w = Root.ActualWidth; var h = Root.ActualHeight;
         var c = new Point(Math.Clamp(p.X, 0, w), Math.Clamp(p.Y, 0, h));
 
@@ -378,7 +394,7 @@ public partial class CaptureWindow : Window
 
     // ───────────────────────── Kính lúp khi chọn vùng ─────────────────────────
 
-    private void Root_MouseLeave(object sender, MouseEventArgs e) => HideLoupe();
+    private void Root_MouseLeave(object sender, MouseEventArgs e) { HideLoupe(); if (_pickingWindow) ClearSelection(); }
 
     private void HideLoupe() => Loupe.Visibility = Visibility.Collapsed;
 
@@ -2519,16 +2535,20 @@ public partial class CaptureWindow : Window
         if (_history.TryRedo(out var state)) RestoreHistory(state);
     }
 
+    private DrawingRectangle SelectedPixels() =>
+        CaptureGeometry.SelectionPixels(_screenBounds, _sel.X, _sel.Y, _sel.Width, _sel.Height, ScaleX, ScaleY);
+
     private BitmapSource RenderFinal()
     {
         CommitText();
-        var sx = ScaleX; var sy = ScaleY;
-        var px = Math.Clamp((int)Math.Round(_sel.X * sx), 0, _source.PixelWidth - 1);
-        var py = Math.Clamp((int)Math.Round(_sel.Y * sy), 0, _source.PixelHeight - 1);
-        var pw = Math.Clamp((int)Math.Round(_sel.Width * sx), 1, _source.PixelWidth - px);
-        var ph = Math.Clamp((int)Math.Round(_sel.Height * sy), 1, _source.PixelHeight - py);
+        var pixels = SelectedPixels();
+        var px = pixels.Left - _screenBounds.Left;
+        var py = pixels.Top - _screenBounds.Top;
+        var pw = pixels.Width;
+        var ph = pixels.Height;
 
         var crop = new CroppedBitmap(_source, new Int32Rect(px, py, pw, ph));
+        if (!Layers.Any()) { crop.Freeze(); return crop; }
         var w = Root.ActualWidth; var h = Root.ActualHeight;
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
@@ -2593,6 +2613,7 @@ public partial class CaptureWindow : Window
                     ReportOutputError(code, Loc.Lang == "vi" ? "Ảnh đã lưu; không thể sao chép vào clipboard." : "Image saved; clipboard copy failed.", ex);
                 }
             }
+            OutputCompleted?.Invoke(SelectedPixels());
             IsEnabled = true;
             Close();
         }

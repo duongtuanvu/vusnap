@@ -49,10 +49,11 @@ jobs:
           }
           $dist = Join-Path $PWD 'dist'
           New-Item -ItemType Directory -Force $dist | Out-Null
-          & $iscc '/DAppVersion=0.2.1' "/DSourceDir=$source" "/DOutputDir=$dist" installer/VuSnap.iss
+          $version = ([xml](Get-Content src/VuSnap/VuSnap.csproj -Raw)).Project.PropertyGroup.Version
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$source" "/DOutputDir=$dist" installer/VuSnap.iss
           if ($LASTEXITCODE -ne 0) { throw 'ERR_PACKAGE_INSTALLER' }
           Compress-Archive -Path "$source/VuSnap.exe","$source/LICENSE" -DestinationPath "$dist/VuSnap-portable.zip"
-          if (!(Test-Path "$dist/VuSnap-0.2.1-setup.exe")) { throw 'ERR_PACKAGE_INSTALLER_MISSING' }
+          if (!(Test-Path "$dist/VuSnap-$version-setup.exe")) { throw 'ERR_PACKAGE_INSTALLER_MISSING' }
       - uses: actions/upload-artifact@v4
         with:
           name: VuSnap-ci-packages

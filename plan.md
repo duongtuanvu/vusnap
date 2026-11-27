@@ -79,6 +79,13 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 - [ ] Add capture mode preferences, shortcuts, localized UI and tests.
 - [ ] Verify DPI, 4K, multi-monitor, cancellation and resource disposal; CI pass and merge.
 
+### v0.3.0 candidate — pending CI and merge
+
+- Implemented six capture modes, countdown cancellation, tray selection and settings.
+- Reused MIT Snapboard DWM bounds; see [THIRD_PARTY.md](docs/THIRD_PARTY.md).
+- Window capture captures visible desktop pixels only; covered windows may be included. Repeat stores coordinates/layout in memory for this session. Mixed-DPI and physical multi-monitor acceptance remain open.
+- Added four regression groups for geometry, layout, window hit order, settings and cancellation. Checkboxes remain open until verified merge.
+
 ## v0.4.0 — OCR, Pin & History
 
 - [ ] Offline OCR (evaluate Windows OCR and local alternatives; EN/VI support with explicit language availability).

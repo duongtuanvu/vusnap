@@ -6,6 +6,10 @@
 
 [English](README.md) · [Bản phát hành](https://github.com/duongtuanvu/vusnap/releases) · [Báo lỗi](https://github.com/duongtuanvu/vusnap/issues)
 
+## Chụp nâng cao
+
+Chọn chế độ và hẹn giờ trong cửa sổ chính hoặc menu khay hệ thống. Repeat sử dụng vùng xuất ảnh thành công gần nhất trong phiên chạy nếu bố cục màn hình không đổi. Chụp cửa sổ lấy pixel đang hiển thị, có thể chứa cửa sổ che phía trước. Nhấn lại phím tắt để hủy hẹn giờ. Xem [nguồn mã tái sử dụng](docs/THIRD_PARTY.md).
+
 ## Tính năng
 
 - Chụp bằng Alt+Shift+S, chọn vùng, đổi kích thước, kính lúp, lưới và khóa tỷ lệ.

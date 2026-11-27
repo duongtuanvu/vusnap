@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] - Unreleased
+
+- Add region, monitor, desktop, active window, window picker and repeat capture modes.
+- Add cancellable delayed capture and localized tray/main capture controls.
+- Capture physical monitor intersections with opaque pixels and bounded dimensions.
+- Adapt MIT Snapboard DWM window bounds; preserve attribution.
+- Add geometry, layout, settings and cancellation regression tests.
+
 ## [0.2.1] - Unreleased
 
 - Restore annotation history from metadata instead of retaining WPF visuals; coalesce slider and color gestures.
