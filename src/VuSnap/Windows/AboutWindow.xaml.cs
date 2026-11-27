@@ -12,9 +12,7 @@ public partial class AboutWindow : Window
         Owner = owner;
         Icon = AppIcon.LoadImage();
         LogoImage.Source = AppIcon.LoadLogo();
-        // dùng cùng bảng màu (sáng/tối) với cửa sổ chính
-        foreach (var key in new[] { "WindowBrush", "PanelBrush", "TextBrush", "BorderBrushX" })
-            if (owner.Resources[key] is { } brush) Resources[key] = brush;
+        ThemeManager.HookWindowChrome(this, () => ThemeManager.IsDark(SettingsService.Load().Theme));
 
         Title = Loc.T("info.title");
         NameText.Text = AppInfo.AppName;

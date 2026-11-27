@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, TextBox> _scBoxes = new();
     private readonly TrayService _tray;
     private bool _exiting, _balloonShown;
+    private string _toolFilter = "All";
 
     /// <summary>Hiện lại cửa sổ từ khay hệ thống (hoặc khi mở app lần 2).</summary>
     public void ShowFromTray()
@@ -49,14 +50,15 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
-    /// <summary>Một dòng của bảng: nhãn, id bật/tắt hiển thị (null = không có), id phím tắt (null = không có).</summary>
-    private sealed record Row(string Label, string? VisId, string? ScId);
+    /// <summary>Một dòng của bảng: nhóm, nhãn, id bật/tắt hiển thị (null = không có), id phím tắt (null = không có).</summary>
+    private sealed record Row(string Group, string Label, string? VisId, string? ScId);
 
     public MainWindow()
     {
         Loc.Lang = _settings.Language;
         InitializeComponent();
         Icon = AppIcon.LoadImage();
+        ThemeManager.HookWindowChrome(this, () => ThemeManager.IsDark(_settings.Theme));
         BuildDefSwatches();
         RefreshAll();
         // Overlay có thể lưu độ phóng đại/hình dạng kính lúp lần dùng gần nhất -> đồng bộ lại khi quay về cửa sổ này
@@ -83,6 +85,29 @@ public partial class MainWindow : Window
             if (!_balloonShown) { _balloonShown = true; _tray.ShowBalloon(Loc.T("tray.balloon")); }
         };
         Closed += (_, _) => { _exiting = true; _captureCancellation?.Cancel(); UnregisterHotkey(); _tray.Dispose(); };
+    }
+
+    // ───────────────────────── Window chrome & Navigation ─────────────────────────
+
+    private void Help_Click(object sender, RoutedEventArgs e)
+    {
+        if (HelpButton.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = HelpButton;
+            menu.IsOpen = true;
+        }
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void CloseWin_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void NavTab_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized || PageCapture is null || PageTools is null || PageToolbar is null || PageGeneral is null || sender is not RadioButton { Tag: string tag }) return;
+        PageCapture.Visibility = tag == "Capture" ? Visibility.Visible : Visibility.Collapsed;
+        PageTools.Visibility = tag == "Tools" ? Visibility.Visible : Visibility.Collapsed;
+        PageToolbar.Visibility = tag == "Toolbar" ? Visibility.Visible : Visibility.Collapsed;
+        PageGeneral.Visibility = tag == "General" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ───────────────────────── Hotkey toàn cục ─────────────────────────
@@ -118,8 +143,10 @@ public partial class MainWindow : Window
 
     private void SetStatus(string text)
     {
+        if (StatusBanner is null) return;
         StatusText.Text = text;
-        StatusText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+        StatusBanner.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+        if (string.IsNullOrEmpty(text)) CancelCaptureButton.Visibility = Visibility.Collapsed;
     }
 
     private static bool IsModifierKey(Key k) =>
@@ -165,10 +192,18 @@ public partial class MainWindow : Window
         {
             _settings.Hotkey = old; UnregisterHotkey();
             if (!RegisterHotkey(old)) ErrorLog.Write(ErrorCodes.Hotkey);
-            HotkeyBox.Text = ShortcutHelper.Pretty(old); return;
+            UpdateHotkeyDisplay(old); return;
         }
-        HotkeyBox.Text = ShortcutHelper.Pretty(combo);
+        UpdateHotkeyDisplay(combo);
         SetStatus("");
+    }
+
+    private void UpdateHotkeyDisplay(string combo)
+    {
+        var pretty = ShortcutHelper.Pretty(combo);
+        HotkeyBox.Text = pretty;
+        HotkeyHintChip.Text = pretty;
+        TrayStatusText.Text = $"{Loc.T("tray.listening")} · {pretty}";
     }
 
     // ───────────────────────── Chụp ─────────────────────────
@@ -178,11 +213,16 @@ public partial class MainWindow : Window
     private void CaptureNow_Click(object sender, RoutedEventArgs e) => StartCapture();
     private void CancelCapture_Click(object sender, RoutedEventArgs e) => _captureCancellation?.Cancel();
 
-    private void CapturePreferences_Changed(object sender, SelectionChangedEventArgs e)
+    private void ModeRadio_Checked(object sender, RoutedEventArgs e)
     {
-        if (_loading || CaptureModeBox?.SelectedItem is not ComboBoxItem { Tag: string mode } ||
-            CaptureDelayBox?.SelectedItem is not ComboBoxItem { Tag: string delay }) return;
+        if (_loading || sender is not RadioButton { Tag: string mode }) return;
         _settings.DefaultCaptureMode = mode;
+        SaveSettings();
+    }
+
+    private void DelayRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loading || sender is not RadioButton { Tag: string delay }) return;
         _settings.CaptureDelaySeconds = int.Parse(delay, CultureInfo.InvariantCulture);
         SaveSettings();
     }
@@ -204,6 +244,7 @@ public partial class MainWindow : Window
                 await Task.Delay(250, token);
             }
             CancelCaptureButton.IsEnabled = true;
+            CancelCaptureButton.Visibility = Visibility.Visible;
             for (int remaining = delay; remaining > 0; remaining--)
             {
                 SetStatus(Loc.F("capture.countdown", remaining));
@@ -293,6 +334,7 @@ public partial class MainWindow : Window
             if (!_exiting)
             {
                 CancelCaptureButton.IsEnabled = false;
+                CancelCaptureButton.Visibility = Visibility.Collapsed;
                 if (!shown && IsVisible && WindowState == WindowState.Minimized) WindowState = priorState;
             }
             if (!shown) _capturing = false;
@@ -314,14 +356,20 @@ public partial class MainWindow : Window
         ApplyTheme(_settings.Theme);
         ApplyLanguage();
 
-        SelectByTag(CaptureModeBox, _settings.DefaultCaptureMode);
-        SelectByTag(CaptureDelayBox, _settings.CaptureDelaySeconds.ToString(CultureInfo.InvariantCulture));
+        foreach (var rb in new[] { ModeRegion, ModeActiveWindow, ModeMonitor, ModeDesktop, ModeWindowPicker, ModeWindowHover, ModeRepeat, ModeColorPicker })
+            rb.IsChecked = (string)rb.Tag == _settings.DefaultCaptureMode;
+        foreach (var rb in new[] { Delay0, Delay3, Delay5, Delay10 })
+            rb.IsChecked = (string)rb.Tag == _settings.CaptureDelaySeconds.ToString(CultureInfo.InvariantCulture);
+
         SelectByTag(LangBox, _settings.Language);
-        SelectByTag(ThemeBox, _settings.Theme);
-        HotkeyBox.Text = ShortcutHelper.Pretty(_settings.Hotkey);
+        foreach (var rb in new[] { ThemeLightRadio, ThemeDarkRadio, ThemeSystemRadio })
+            rb.IsChecked = (string)rb.Tag == _settings.Theme;
+        foreach (var rb in new[] { FmtPngRadio, FmtJpgRadio })
+            rb.IsChecked = (string)rb.Tag == _settings.DefaultFormat;
+
+        UpdateHotkeyDisplay(_settings.Hotkey);
         CopyAfterBox.IsChecked = _settings.CopyAfterCapture;
         SaveDirBox.Text = _settings.SaveDirectory;
-        SelectByTag(SaveFormatBox, _settings.DefaultFormat);
 
         foreach (var rb in new[] { PosTop, PosLeft, PosRight, PosBottom })
             rb.IsChecked = (string)rb.Tag == _settings.ToolbarPosition;
@@ -339,7 +387,7 @@ public partial class MainWindow : Window
         DefThickSlider.Value = Math.Clamp(_settings.DefaultThickness, 1, 40);
         DefOpacitySlider.Value = Math.Clamp(_settings.DefaultOpacity, 0.05, 1) * 100;
         DefItalicBox.IsChecked = _settings.DefaultFontItalic;
-        DefThickValue.Text = $"{(int)DefThickSlider.Value}";
+        DefThickValue.Text = $"{(int)DefThickSlider.Value} px";
         DefOpacityValue.Text = $"{(int)Math.Round(DefOpacitySlider.Value)}%";
         _loading = false;
     }
@@ -352,71 +400,105 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Nội dung nút gồm icon Material + chữ.</summary>
-    private static StackPanel IconText(MaterialIconKind kind, string text)
+    private static StackPanel IconText(MaterialIconKind kind, string text, double iconSize = 16)
     {
-        // Chữ lấy màu theo nút (kiểu TextBlock mặc định của cửa sổ sẽ ép màu tối nên phải bind lại, vd. nút Donate chữ trắng)
         var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
         label.SetBinding(TextBlock.ForegroundProperty, new System.Windows.Data.Binding("Foreground")
         {
             RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(Button), 1),
         });
-        return new StackPanel
+        var icon = new MaterialIcon { Kind = kind, Width = iconSize, Height = iconSize, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center };
+        icon.SetBinding(MaterialIcon.ForegroundProperty, new System.Windows.Data.Binding("Foreground")
         {
-            Orientation = Orientation.Horizontal,
-            Children =
-            {
-                new MaterialIcon { Kind = kind, Width = 17, Height = 17, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center },
-                label,
-            },
-        };
+            RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(Button), 1),
+        });
+        return new StackPanel { Orientation = Orientation.Horizontal, Children = { icon, label } };
     }
 
-    private static TextBlock Wrap(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = 250 };
-
-    /// <summary>Đặt lại toàn bộ chuỗi theo ngôn ngữ hiện tại (kể cả bảng dựng bằng code).</summary>
+    /// <summary>Đặt lại toàn bộ chuỗi theo ngôn ngữ hiện tại.</summary>
     private void ApplyLanguage()
     {
         Title = AppInfo.TitleWithVersion;
+        VersionBadge.Text = $"v{AppInfo.Version}";
         SetStatus("");
 
-        LangLabel.Text = Loc.T("gen.language");
-        ThemeLabel.Text = Loc.T("gen.theme");
-        foreach (ComboBoxItem item in ThemeBox.Items) item.Content = Loc.T("theme." + item.Tag);
-        CaptureModeLabel.Text = Loc.T("capture.mode");
+        HelpButton.ToolTip = Loc.T("win.help");
+        MinButton.ToolTip = Loc.T("win.minimize");
+        CloseButton.ToolTip = Loc.T("win.close");
+        MenuAbout.Header = Loc.T("about.info");
+        MenuFeatures.Header = Loc.T("about.features");
+        MenuHowTo.Header = Loc.T("about.howto");
+        MenuDonate.Header = Loc.T("about.donate");
+        MenuSep.Visibility = MenuDonate.Visibility = string.IsNullOrEmpty(AppInfo.DonateUrl) ? Visibility.Collapsed : Visibility.Visible;
+
+        NavCaptureLabel.Text = Loc.T("tab.capture");
+        NavToolsLabel.Text = Loc.T("tab.tools");
+        NavToolbarLabel.Text = Loc.T("tab.toolbar");
+        NavGeneralLabel.Text = Loc.T("tab.general");
+
+        ModeRegionText.Text = Loc.T("capture.Region");
+        ModeActiveWindowText.Text = Loc.T("capture.ActiveWindowShort");
+        ModeActiveWindow.ToolTip = Loc.T("capture.ActiveWindow");
+        ModeMonitorText.Text = Loc.T("capture.Monitor");
+        ModeDesktop.Content = Loc.T("capture.Desktop");
+        ModeWindowPicker.Content = Loc.T("capture.WindowPicker");
+        ModeWindowHover.Content = Loc.T("capture.WindowHover");
+        ModeRepeat.Content = Loc.T("capture.Repeat");
+        ModeColorPicker.Content = Loc.T("capture.ColorPicker");
+
         CaptureDelayLabel.Text = Loc.T("capture.delay");
-        foreach (ComboBoxItem item in CaptureModeBox.Items) item.Content = Loc.T("capture." + item.Tag);
-        foreach (ComboBoxItem item in CaptureDelayBox.Items) item.Content = item.Tag + " s";
-        CaptureNowButton.Content = Loc.T("btn.capture");
+        Delay0.Content = "Off";
+        Delay3.Content = "3s";
+        Delay5.Content = "5s";
+        Delay10.Content = "10s";
+
+        CaptureNowButton.Content = IconText(MaterialIconKind.CropFree, Loc.T("btn.capture"), 18);
         CancelCaptureButton.Content = Loc.T("capture.cancel");
         HotkeyLabel.Text = Loc.T("gen.hotkey");
         HotkeyBox.ToolTip = Loc.T("gen.hotkeyHint");
+        OrPressText.Text = Loc.T("capture.orPress");
+        AnywhereText.Text = Loc.T("capture.anywhere");
+        Step1Text.Text = Loc.T("capture.step1");
+        Step2Text.Text = Loc.T("capture.step2");
+        Step3Text.Text = Loc.T("capture.step3");
+
+        LangLabel.Text = Loc.T("gen.language");
+        ThemeLabel.Text = Loc.T("gen.theme");
+        ThemeLightRadio.Content = Loc.T("theme.Light");
+        ThemeDarkRadio.Content = Loc.T("theme.Dark");
+        ThemeSystemRadio.Content = Loc.T("theme.System");
         ResetButton.Content = Loc.T("gen.reset");
 
-        ImportButton.Content = IconText(MaterialIconKind.Import, Loc.T("set.import"));
-        ExportButton.Content = IconText(MaterialIconKind.Export, Loc.T("set.export"));
-        InfoButton.Content = IconText(MaterialIconKind.InformationOutline, Loc.T("about.info"));
-        FeaturesButton.Content = IconText(MaterialIconKind.Creation, Loc.T("about.features"));
-        HowToButton.Content = IconText(MaterialIconKind.HelpCircleOutline, Loc.T("about.howto"));
-        DonateButton.Content = IconText(MaterialIconKind.Heart, Loc.T("about.donate"));
+        ImportButton.Content = IconText(MaterialIconKind.Import, Loc.T("set.importShort"), 15);
+        ImportButton.ToolTip = Loc.T("set.import");
+        ExportButton.Content = IconText(MaterialIconKind.Export, Loc.T("set.exportShort"), 15);
+        ExportButton.ToolTip = Loc.T("set.export");
+        InfoButton.Content = IconText(MaterialIconKind.InformationOutline, Loc.T("about.info"), 15);
+        FeaturesButton.Content = IconText(MaterialIconKind.Creation, Loc.T("about.features"), 15);
+        HowToButton.Content = IconText(MaterialIconKind.HelpCircleOutline, Loc.T("about.howto"), 15);
+        DonateButton.Content = IconText(MaterialIconKind.Heart, Loc.T("about.donate"), 15);
 
-        PosTitle.Text = Loc.T("disp.position");
+        PosTitle.Text = Loc.T("disp.position").ToUpperInvariant();
         PosTop.Content = "▲  " + Loc.T("pos.Top"); PosBottom.Content = "▼  " + Loc.T("pos.Bottom");
         PosLeft.Content = "◀"; PosRight.Content = "▶";
         PosLeft.ToolTip = Loc.T("pos.Left"); PosRight.ToolTip = Loc.T("pos.Right");
         PosCenter.Text = Loc.T("disp.selection");
-        MergeBox.Content = Wrap(Loc.T("disp.merge"));
-        SplitBox.Content = Wrap(Loc.T("disp.split"));
-        HintsBox.Content = Wrap(Loc.T("disp.showHints"));
-        LoupeBox.Content = Wrap(Loc.T("disp.loupe"));
+        MergeLabel.Text = Loc.T("disp.merge");
+        SplitLabel.Text = Loc.T("disp.split");
+        HintsLabel.Text = Loc.T("disp.showHints");
+        LoupeLabel.Text = Loc.T("disp.loupe");
         OutlineTitle.Text = Loc.T("disp.outline");
-        SaveTitle.Text = Loc.T("disp.saving");
-        SaveDirLabel.Text = Loc.T("save.dir");
-        SaveFormatLabel.Text = Loc.T("save.format");
-        BrowseButton.Content = IconText(MaterialIconKind.FolderOpenOutline, Loc.T("save.browse"));
-        OpenDirButton.Content = Loc.T("save.open");
-        CopyAfterBox.Content = Wrap(Loc.T("gen.copyAfter"));
 
-        DefTitle.Text = Loc.T("def.title");
+        SaveDirLabel.Text = Loc.T("save.dir");
+        BrowseButton.Content = new MaterialIcon { Kind = MaterialIconKind.FolderOpenOutline, Width = 16, Height = 16 };
+        BrowseButton.ToolTip = Loc.T("save.browse");
+        OpenDirButton.Content = new MaterialIcon { Kind = MaterialIconKind.OpenInNew, Width = 16, Height = 16 };
+        OpenDirButton.ToolTip = Loc.T("save.open");
+        CopyAfterLabel.Text = Loc.T("gen.copyAfter");
+        StartLabel.Text = Loc.T("sys.autostart");
+        TrayLabel.Text = Loc.T("sys.tray");
+
+        DefTitle.Text = Loc.T("def.title").ToUpperInvariant();
         DefColorLabel.Text = Loc.T("def.color");
         DefThickLabel.Text = Loc.T("def.thick");
         DefOpacityLabel.Text = Loc.T("def.opacity");
@@ -429,21 +511,17 @@ public partial class MainWindow : Window
         DefZoomLabel.Text = Loc.T("def.zoom");
         DefLensLabel.Text = Loc.T("def.lens");
         BuildZoomItems();
-        SysTitle.Text = Loc.T("sys.title");
-        StartBox.Content = Wrap(Loc.T("sys.autostart"));
-        TrayBox.Content = Wrap(Loc.T("sys.tray"));
         _tray?.SetTexts();
         DefArrowLabel.Text = Loc.T("def.arrow");
-        DefCornersBox.Content = Wrap(Loc.T("def.corners"));
+        DefCornersBox.Content = Loc.T("def.corners");
         DefArrowBox.Items.Clear();
         foreach (var id in Presets.ArrowIds) DefArrowBox.Items.Add(new ComboBoxItem { Tag = id, Content = Loc.T("arrow." + id) });
         SelectByTag(DefArrowBox, _settings.DefaultArrow);
         DefFontLabel.Text = Loc.T("def.font");
-        DefWeightLabel.Text = Loc.T("def.weight");
+        DefLineTypeLabel.Text = Loc.T("def.linetype");
         DefWeightBox.Items.Clear();
         foreach (var id in Presets.WeightIds) DefWeightBox.Items.Add(new ComboBoxItem { Tag = id, Content = Loc.T("weight." + id) });
         SelectByTag(DefWeightBox, _settings.DefaultFontWeight);
-        DefLineTypeLabel.Text = Loc.T("def.linetype");
         DefLineTypeBox.Items.Clear();
         foreach (var id in Presets.LineTypeIds) DefLineTypeBox.Items.Add(new ComboBoxItem { Tag = id, Content = Loc.T("line." + id) });
         SelectByTag(DefLineTypeBox, _settings.DefaultLineType);
@@ -456,45 +534,58 @@ public partial class MainWindow : Window
         SelectByTag(DefStrokeBox, _settings.DefaultStroke);
         SelectByTag(DefAspectBox, _settings.DefaultAspect);
 
-        TableTitle.Text = Loc.T("tbl.title");
+        FilterAll.Content = Loc.T("filter.all");
+        FilterTools.Content = Loc.T("filter.tools");
+        FilterToolbar.Content = Loc.T("filter.toolbar");
+        FilterActions.Content = Loc.T("filter.actions");
         TableHint.Text = Loc.T("sc.hint");
-        ColName.Text = Loc.T("tbl.name"); ColShow.Text = Loc.T("tbl.show"); ColKey.Text = Loc.T("tbl.key");
         ResetShortcutsButton.Content = Loc.T("sc.reset");
         ResetOrderButton.Content = Loc.T("tbl.resetorder");
         SearchPlaceholder.Text = Loc.T("tbl.search");
-        SearchClear.Content = new MaterialIcon { Kind = MaterialIconKind.Close, Width = 15, Height = 15 };
+        SearchClear.Content = new MaterialIcon { Kind = MaterialIconKind.Close, Width = 14, Height = 14 };
+        UpdateHotkeyDisplay(_settings.Hotkey);
         BuildTable();
     }
 
-    // ───────────────────────── Bảng: Tên | Hiển thị | Phím tắt ─────────────────────────
+    // ───────────────────────── Bảng công cụ & phím tắt (Card list) ─────────────────────────
 
-    private IEnumerable<(string Title, Row[] Rows)> TableGroups()
+    private IEnumerable<(string Group, string Title, Row[] Rows)> TableGroups()
     {
-        yield return (Loc.T("tbl.tools"),
-            ShortcutHelper.OrderedTools(_settings).Select(id => new Row(Loc.T("tool." + id), id, id)).ToArray());
-        yield return (Loc.T("tbl.toolbar"), new[]
+        yield return ("Tools", Loc.T("tbl.tools"),
+            ShortcutHelper.OrderedTools(_settings).Select(id => new Row("Tools", Loc.T("tool." + id), id, id)).ToArray());
+        yield return ("Toolbar", Loc.T("tbl.toolbar"), new[]
         {
-            new Row(Loc.T("ov.color"), "Color", null),
-            new Row(Loc.T("obj.bar"), "ObjBar", null),
-            new Row(Loc.T("act.Ratio"), "Ratio", "Ratio"),
-            new Row(Loc.T("act.TogglePanel"), "Panel", "TogglePanel"),
-            new Row(Loc.T("act.Redo"), "Redo", "Redo"),
-            new Row(Loc.T("act.Undo"), "Undo", "Undo"),
+            new Row("Toolbar", Loc.T("ov.color"), "Color", null),
+            new Row("Toolbar", Loc.T("obj.bar"), "ObjBar", null),
+            new Row("Toolbar", Loc.T("act.Ratio"), "Ratio", "Ratio"),
+            new Row("Toolbar", Loc.T("act.TogglePanel"), "Panel", "TogglePanel"),
+            new Row("Toolbar", Loc.T("act.Redo"), "Redo", "Redo"),
+            new Row("Toolbar", Loc.T("act.Undo"), "Undo", "Undo"),
         });
-        yield return (Loc.T("tbl.actionbar"), new[]
+        yield return ("Actions", Loc.T("tbl.actionbar"), new[]
         {
-            new Row(Loc.T("act.Cancel"), "Cancel", null),
-            new Row(Loc.T("act.SaveAs"), "SaveAs", "SaveAs"),
-            new Row(Loc.T("act.QuickSave"), "QuickSave", "QuickSave"),
-            new Row(Loc.T("act.Copy"), "Copy", "Copy"),
-            new Row(Loc.T("act.Confirm"), "Confirm", "Confirm"),
+            new Row("Actions", Loc.T("act.Cancel"), "Cancel", null),
+            new Row("Actions", Loc.T("act.SaveAs"), "SaveAs", "SaveAs"),
+            new Row("Actions", Loc.T("act.QuickSave"), "QuickSave", "QuickSave"),
+            new Row("Actions", Loc.T("act.Copy"), "Copy", "Copy"),
+            new Row("Actions", Loc.T("act.Confirm"), "Confirm", "Confirm"),
+            new Row("Actions", Loc.T("act.Ocr"), "Ocr", "Ocr"),
+            new Row("Actions", Loc.T("act.ColorInspect"), "ColorInspect", "ColorInspect"),
+            new Row("Actions", Loc.T("act.Barcode"), "Barcode", "Barcode"),
         });
-        yield return (Loc.T("tbl.other"), new[]
+        yield return ("Actions", Loc.T("tbl.other"), new[]
         {
-            new Row(Loc.T("act.Delete"), null, "Delete"),
-            new Row(Loc.T("act.SelectAll"), null, "SelectAll"),
-            new Row(Loc.T("act.Duplicate"), null, "Duplicate"),
+            new Row("Actions", Loc.T("act.Delete"), null, "Delete"),
+            new Row("Actions", Loc.T("act.SelectAll"), null, "SelectAll"),
+            new Row("Actions", Loc.T("act.Duplicate"), null, "Duplicate"),
         });
+    }
+
+    private void ToolFilter_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized || TableRows is null || sender is not RadioButton { Tag: string filter }) return;
+        _toolFilter = filter;
+        BuildTable();
     }
 
     /// <summary>Bỏ dấu + hạ chữ thường để tìm kiếm không phân biệt dấu (đ -> d).</summary>
@@ -519,33 +610,36 @@ public partial class MainWindow : Window
         TableRows.Children.Clear();
         var q = Fold(SearchBox?.Text.Trim() ?? "");
         var filtering = q.Length > 0;
-        foreach (var (title, rows) in TableGroups())
+        foreach (var (group, title, rows) in TableGroups())
         {
+            if (_toolFilter != "All" && group != _toolFilter) continue;
             var shown = filtering ? rows.Where(r => RowMatches(r, q)).ToArray() : rows;
             if (shown.Length == 0) continue;
 
-            var head = new Border
+            var head = new TextBlock
             {
-                Padding = new Thickness(10, 7, 10, 7),
-                Child = new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, FontSize = 12, Opacity = 0.8 },
+                Text = title.ToUpperInvariant(),
+                FontWeight = FontWeights.Bold,
+                FontSize = 11,
+                Margin = new Thickness(2, TableRows.Children.Count == 0 ? 0 : 10, 0, 6),
             };
-            head.SetResourceReference(Border.BackgroundProperty, "HeaderBrush");
+            head.SetResourceReference(TextBlock.ForegroundProperty, "MutedBrush");
             TableRows.Children.Add(head);
 
-            var alt = false;
             foreach (var r in shown)
             {
-                // Kéo thả đổi thứ tự chỉ dành cho nhóm Công cụ và khi không đang lọc (tránh nhầm vị trí)
                 var draggable = !filtering && r.VisId is { } v && ShortcutHelper.ToolIds.Contains(v);
-                TableRows.Children.Add(MakeTableRow(r, alt, draggable));
-                alt = !alt;
+                TableRows.Children.Add(MakeTableRow(r, draggable));
             }
         }
         if (TableRows.Children.Count == 0)
-            TableRows.Children.Add(new TextBlock { Text = Loc.T("tbl.noresult"), Opacity = 0.6, Margin = new Thickness(14), HorizontalAlignment = HorizontalAlignment.Center });
+        {
+            var empty = new TextBlock { Text = Loc.T("tbl.noresult"), Margin = new Thickness(18), HorizontalAlignment = HorizontalAlignment.Center };
+            empty.SetResourceReference(TextBlock.ForegroundProperty, "MutedBrush");
+            TableRows.Children.Add(empty);
+        }
     }
 
-    // ── Ô tìm kiếm ──
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (TableRows is null) return;
@@ -557,26 +651,23 @@ public partial class MainWindow : Window
 
     private void SearchClear_Click(object sender, RoutedEventArgs e) { SearchBox.Clear(); SearchBox.Focus(); }
 
-    // ── Kéo thả đổi thứ tự tool ──
-    // ── Chọn một tool để dùng nút lên/xuống ──
+    // ── Kéo thả & di chuyển lên/xuống thứ tự tool ──
     private string? _selectedTool;
-    private readonly Dictionary<string, (Border Row, StackPanel Arrows, bool Alt)> _toolRows = new();
+    private readonly Dictionary<string, (Border Row, StackPanel Arrows)> _toolRows = new();
 
     private void SelectTool(string id)
     {
         if (_selectedTool == id) return;
         _selectedTool = id;
-        foreach (var (key, (row, arrows, alt)) in _toolRows)
+        foreach (var (key, (row, arrows)) in _toolRows)
         {
             var sel = key == id;
-            if (sel) row.SetResourceReference(Border.BackgroundProperty, "SelRowBrush");
-            else if (alt) row.SetResourceReference(Border.BackgroundProperty, "RowAltBrush");
-            else row.Background = Brushes.Transparent;
+            row.SetResourceReference(Border.BackgroundProperty, sel ? "SelRowBrush" : "PanelBrush");
+            row.SetResourceReference(Border.BorderBrushProperty, sel ? "AccentBrush" : "BorderBrushX");
             arrows.Visibility = sel ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
-    /// <summary>Di chuyển tool lên/xuống một vị trí trong thanh công cụ (delta = -1 lên, +1 xuống).</summary>
     private void MoveTool(string id, int delta)
     {
         var order = ShortcutHelper.OrderedTools(_settings);
@@ -587,7 +678,7 @@ public partial class MainWindow : Window
         order.Insert(target, id);
         _settings.ToolOrder = order;
         SaveSettings();
-        BuildTable(); // giữ nguyên tool đang chọn (_selectedTool) để bấm tiếp được
+        BuildTable();
     }
 
     private Point _dragStart;
@@ -598,20 +689,24 @@ public partial class MainWindow : Window
         if (sender is not Border b || !e.Data.GetDataPresent("vusnap.tool")) return;
         e.Effects = DragDropEffects.Move; e.Handled = true;
         var after = e.GetPosition(b).Y > b.ActualHeight / 2;
-        b.BorderBrush = (Brush)FindResource("AccentBrush");
-        b.BorderThickness = after ? new Thickness(0, 0, 0, 2) : new Thickness(0, 2, 0, 0);
+        b.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        b.BorderThickness = after ? new Thickness(1, 1, 1, 2.5) : new Thickness(1, 2.5, 1, 1);
     }
 
     private void ToolRow_DragLeave(object sender, DragEventArgs e)
     {
-        if (sender is Border b) b.BorderThickness = new Thickness(0);
+        if (sender is Border b)
+        {
+            b.BorderThickness = new Thickness(1);
+            b.SetResourceReference(Border.BorderBrushProperty, _selectedTool == b.Tag as string ? "AccentBrush" : "BorderBrushX");
+        }
     }
 
     private void ToolRow_Drop(object sender, DragEventArgs e)
     {
         if (sender is not Border { Tag: string target } b || e.Data.GetData("vusnap.tool") is not string dragged) return;
         var after = e.GetPosition(b).Y > b.ActualHeight / 2;
-        b.BorderThickness = new Thickness(0);
+        b.BorderThickness = new Thickness(1);
         e.Handled = true;
         if (dragged == target) return;
 
@@ -631,33 +726,35 @@ public partial class MainWindow : Window
         BuildTable();
     }
 
-    private static TextBlock Dash() => new()
+    private UIElement MakeTableRow(Row r, bool draggable)
     {
-        Text = "—", Opacity = 0.35, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-    };
+        var border = new Border
+        {
+            Padding = new Thickness(10, 7, 10, 7),
+            Margin = new Thickness(0, 0, 0, 6),
+            CornerRadius = new CornerRadius(12),
+            BorderThickness = new Thickness(1),
+            Tag = r.VisId,
+        };
+        border.SetResourceReference(Border.BackgroundProperty, "PanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "BorderBrushX");
 
-    private UIElement MakeTableRow(Row r, bool alt, bool draggable)
-    {
-        var border = new Border { Padding = new Thickness(10, 4, 10, 4), Tag = r.VisId, Background = Brushes.Transparent };
-        if (alt) border.SetResourceReference(Border.BackgroundProperty, "RowAltBrush");
         if (draggable)
         {
             border.AllowDrop = true;
             border.DragOver += ToolRow_DragOver; border.DragLeave += ToolRow_DragLeave; border.Drop += ToolRow_Drop;
         }
 
-        var grid = new Grid { MinHeight = 32 };
+        var grid = new Grid { MinHeight = 30 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(58) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        // Cột Tên: tay nắm kéo (chỉ nhóm Công cụ) + nhãn
         var nameCell = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var grip = new MaterialIcon { Kind = MaterialIconKind.DragVertical, Width = 20, Height = 20, Opacity = draggable ? 0.45 : 0, VerticalAlignment = VerticalAlignment.Center };
         if (draggable && r.VisId is { } toolId)
         {
+            var grip = new MaterialIcon { Kind = MaterialIconKind.DragVertical, Width = 18, Height = 18, Opacity = 0.45, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
             grip.Cursor = Cursors.SizeAll; grip.ToolTip = Loc.T("tbl.grip"); grip.Background = Brushes.Transparent;
             grip.MouseLeftButtonDown += (_, e) => { _dragStart = e.GetPosition(null); _dragCandidate = toolId; };
             grip.MouseLeftButtonUp += (_, _) => _dragCandidate = null;
@@ -669,47 +766,57 @@ public partial class MainWindow : Window
                 _dragCandidate = null;
                 DragDrop.DoDragDrop(grip, new DataObject("vusnap.tool", toolId), DragDropEffects.Move);
             };
+            nameCell.Children.Add(grip);
         }
-        nameCell.Children.Add(grip);
         if ((r.VisId ?? r.ScId) is { } iconId && ToolIcons.Create(iconId) is { } icon) nameCell.Children.Add(icon);
-        nameCell.Children.Add(new TextBlock { Text = r.Label, ToolTip = r.Label, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+        nameCell.Children.Add(new TextBlock
+        {
+            Text = r.Label, ToolTip = r.Label, VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis, FontWeight = FontWeights.SemiBold, FontSize = 12.5,
+        });
         grid.Children.Add(nameCell);
-        // Cột Hiển thị
-        UIElement show;
+
+        // Toggle switch hiển thị trên thanh công cụ
         if (r.VisId is { } vis)
         {
-            var cb = new CheckBox
+            var toggle = new CheckBox
             {
-                Tag = vis, IsChecked = !_settings.HiddenTools.Contains(vis), Margin = new Thickness(0),
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                Tag = vis,
+                IsChecked = !_settings.HiddenTools.Contains(vis),
+                Style = (Style)FindResource("ProToggle"),
+                Margin = new Thickness(8, 0, 8, 0),
+                ToolTip = Loc.T("tbl.show"),
             };
-            cb.Checked += ToolCheck_Changed; cb.Unchecked += ToolCheck_Changed;
-            show = cb;
+            toggle.Checked += ToolCheck_Changed; toggle.Unchecked += ToolCheck_Changed;
+            Grid.SetColumn(toggle, 1);
+            grid.Children.Add(toggle);
         }
-        else show = Dash();
-        Grid.SetColumn(show, 1);
-        grid.Children.Add(show);
 
-        // Cột Phím tắt (+ nút xóa)
+        // Keycap phím tắt + nút xóa
         if (r.ScId is { } sc)
         {
-            var box = new TextBox { Tag = sc, IsReadOnly = true, IsReadOnlyCaretVisible = false, Cursor = Cursors.Arrow, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+            var keyWrap = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            var box = new TextBox
+            {
+                Tag = sc,
+                Style = (Style)FindResource("KeycapBox"),
+                Width = 68,
+            };
             box.PreviewKeyDown += Shortcut_PreviewKeyDown;
-            Grid.SetColumn(box, 2);
-            grid.Children.Add(box);
+            keyWrap.Children.Add(box);
             _scBoxes[sc] = box;
             ShowShortcut(box, ShortcutHelper.Get(_settings, sc));
 
-            var clear = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.Close, Width = 15, Height = 15 }, Style = (Style)FindResource("IconButton"), ToolTip = "Clear" };
+            var clear = new Button
+            {
+                Content = new MaterialIcon { Kind = MaterialIconKind.Close, Width = 13, Height = 13 },
+                Style = (Style)FindResource("IconButton"),
+                Width = 24, Height = 24, Margin = new Thickness(2, 0, 0, 0), ToolTip = "Clear",
+            };
             clear.Click += (_, _) => SetShortcut(sc, "");
-            Grid.SetColumn(clear, 3);
-            grid.Children.Add(clear);
-        }
-        else
-        {
-            var d = Dash();
-            Grid.SetColumn(d, 2);
-            grid.Children.Add(d);
+            keyWrap.Children.Add(clear);
+            Grid.SetColumn(keyWrap, 2);
+            grid.Children.Add(keyWrap);
         }
 
         if (draggable && r.VisId is { } rowTool)
@@ -717,17 +824,21 @@ public partial class MainWindow : Window
             var order = ShortcutHelper.OrderedTools(_settings);
             var idx = order.IndexOf(rowTool);
             var iconStyle = (Style)FindResource("IconButton");
-            var up = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.ArrowUp, Width = 17, Height = 17 }, Style = iconStyle, Width = 26, Height = 26, ToolTip = Loc.T("tbl.up"), IsEnabled = idx > 0 };
-            var down = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.ArrowDown, Width = 17, Height = 17 }, Style = iconStyle, Width = 26, Height = 26, ToolTip = Loc.T("tbl.down"), IsEnabled = idx >= 0 && idx < order.Count - 1 };
+            var up = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.ArrowUp, Width = 15, Height = 15 }, Style = iconStyle, Width = 24, Height = 24, ToolTip = Loc.T("tbl.up"), IsEnabled = idx > 0 };
+            var down = new Button { Content = new MaterialIcon { Kind = MaterialIconKind.ArrowDown, Width = 15, Height = 15 }, Style = iconStyle, Width = 24, Height = 24, ToolTip = Loc.T("tbl.down"), IsEnabled = idx >= 0 && idx < order.Count - 1 };
             up.Click += (_, _) => MoveTool(rowTool, -1);
             down.Click += (_, _) => MoveTool(rowTool, +1);
-            var arrows = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Children = { up, down } };
+            var arrows = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0), Children = { up, down } };
             var selected = _selectedTool == rowTool;
             arrows.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
-            if (selected) border.SetResourceReference(Border.BackgroundProperty, "SelRowBrush");
-            Grid.SetColumn(arrows, 4);
+            if (selected)
+            {
+                border.SetResourceReference(Border.BackgroundProperty, "SelRowBrush");
+                border.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+            }
+            Grid.SetColumn(arrows, 3);
             grid.Children.Add(arrows);
-            _toolRows[rowTool] = (border, arrows, alt);
+            _toolRows[rowTool] = (border, arrows);
             border.MouseLeftButtonDown += (_, _) => SelectTool(rowTool);
         }
 
@@ -737,8 +848,9 @@ public partial class MainWindow : Window
 
     private void ShowShortcut(TextBox box, string combo)
     {
-        box.Text = combo == "" ? Loc.T("sc.none") : ShortcutHelper.Pretty(combo);
-        box.Opacity = combo == "" ? 0.55 : 1;
+        box.Text = combo == "" ? "—" : ShortcutHelper.Pretty(combo);
+        box.Opacity = combo == "" ? 0.5 : 1;
+        box.ToolTip = combo == "" ? Loc.T("sc.none") : ShortcutHelper.Pretty(combo);
     }
 
     private void SetShortcut(string id, string combo)
@@ -797,10 +909,16 @@ public partial class MainWindow : Window
         _loading = true; ApplyLanguage(); _loading = false;
     }
 
-    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void ThemeRadio_Checked(object sender, RoutedEventArgs e)
     {
-        if (_loading || ThemeBox.SelectedItem is not ComboBoxItem item) return;
-        _settings.Theme = (string)item.Tag; ApplyTheme(_settings.Theme); SaveSettings();
+        if (_loading || sender is not RadioButton { Tag: string theme }) return;
+        _settings.Theme = theme; ApplyTheme(theme); SaveSettings();
+    }
+
+    private void FormatRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loading || sender is not RadioButton { Tag: string fmt }) return;
+        _settings.DefaultFormat = fmt; SaveSettings();
     }
 
     // ───────────────────────── Thư mục lưu ảnh ─────────────────────────
@@ -856,12 +974,6 @@ public partial class MainWindow : Window
         catch (Exception ex) { SetStatus(ex.Message); }
     }
 
-    private void SaveFormat_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || SaveFormatBox.SelectedItem is not ComboBoxItem { Tag: string f }) return;
-        _settings.DefaultFormat = f; SaveSettings();
-    }
-
     private void CopyAfter_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
@@ -886,9 +998,9 @@ public partial class MainWindow : Window
 
     private void OutlineSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (OutlineValue is null) return;
+        if (OutlineValue is null || OutlinePreview is null) return;
         UpdateOutlineLabel();
-        if (_loading) return;
+        if (_loading || !IsInitialized) return;
         _settings.OutlineOpacity = Math.Round(OutlineSlider.Value) / 100; SaveSettings();
     }
 
@@ -898,13 +1010,13 @@ public partial class MainWindow : Window
         OutlinePreview.Opacity = OutlineSlider.Value / 100;
     }
 
-    // ───────────────────────── Giá trị mặc định (màu / độ dày / độ đậm / kiểu nét / tỉ lệ) ─────────────────────────
+    // ───────────────────────── Giá trị mặc định ─────────────────────────
 
     private static readonly Color[] DefPalette =
     {
-        Color.FromRgb(255, 0, 0), Color.FromRgb(255, 140, 0), Color.FromRgb(255, 214, 0), Color.FromRgb(126, 211, 33),
-        Color.FromRgb(0, 160, 80), Color.FromRgb(0, 200, 220), Color.FromRgb(0, 0, 255), Color.FromRgb(130, 60, 220),
-        Color.FromRgb(255, 60, 170), Color.FromRgb(0, 0, 0), Color.FromRgb(128, 128, 128), Color.FromRgb(255, 255, 255),
+        Color.FromRgb(255, 59, 92), Color.FromRgb(255, 140, 0), Color.FromRgb(255, 214, 0), Color.FromRgb(16, 185, 129),
+        Color.FromRgb(111, 109, 255), Color.FromRgb(115, 150, 254), Color.FromRgb(130, 60, 220), Color.FromRgb(0, 0, 0),
+        Color.FromRgb(255, 255, 255),
     };
 
     private void BuildDefSwatches()
@@ -914,7 +1026,7 @@ public partial class MainWindow : Window
             var color = c;
             var dot = new Ellipse
             {
-                Width = 22, Height = 22, Margin = new Thickness(2), Cursor = Cursors.Hand, Tag = color,
+                Width = 20, Height = 20, Margin = new Thickness(2.5), Cursor = Cursors.Hand, Tag = color,
                 Fill = new SolidColorBrush(color), Stroke = new SolidColorBrush(Color.FromArgb(70, 128, 128, 128)), StrokeThickness = 1,
             };
             dot.MouseLeftButtonDown += (_, _) => SetDefaultColor(color);
@@ -929,7 +1041,7 @@ public partial class MainWindow : Window
         foreach (Ellipse e in DefSwatches.Children)
         {
             var on = (Color)e.Tag == c;
-            e.Stroke = on ? new SolidColorBrush(Color.FromRgb(37, 99, 235)) : new SolidColorBrush(Color.FromArgb(70, 128, 128, 128));
+            e.Stroke = on ? new SolidColorBrush(Color.FromRgb(111, 109, 255)) : new SolidColorBrush(Color.FromArgb(70, 128, 128, 128));
             e.StrokeThickness = on ? 2.5 : 1;
         }
         if (_loading || !save) return;
@@ -955,7 +1067,7 @@ public partial class MainWindow : Window
     private void DefThick_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (DefThickValue is null) return;
-        DefThickValue.Text = $"{(int)DefThickSlider.Value}";
+        DefThickValue.Text = $"{(int)DefThickSlider.Value} px";
         if (_loading) return;
         _settings.DefaultThickness = DefThickSlider.Value; SaveSettings();
     }
@@ -976,7 +1088,6 @@ public partial class MainWindow : Window
 
     private static string ZoomTag(double z) => z.ToString("0.##", CultureInfo.InvariantCulture);
 
-    /// <summary>Các mức zoom có sẵn + giá trị đang lưu (có thể lẻ do lăn chuột ở overlay).</summary>
     private void BuildZoomItems()
     {
         var values = new List<double> { 2, 3, 4, 6 };
@@ -990,7 +1101,6 @@ public partial class MainWindow : Window
     private void SyncFromDisk()
     {
         var d = SettingsService.Load();
-        // Overlay lưu độ phóng đại / hình dạng kính lúp / lưới lần dùng gần nhất: lấy lại để lần ghi cài đặt sau không đè mất.
         _settings.ShowGrid = d.ShowGrid; _settings.GridSize = d.GridSize; _settings.GridType = d.GridType;
         if (Math.Abs(d.DefaultZoom - _settings.DefaultZoom) < 0.001 && d.DefaultLens == _settings.DefaultLens) return;
         _settings.DefaultZoom = d.DefaultZoom; _settings.DefaultLens = d.DefaultLens;
@@ -1010,7 +1120,6 @@ public partial class MainWindow : Window
         DefFontBox.SelectedIndex = 0;
     }
 
-    /// <summary>Chỉ liệt kê font hệ thống khi mở danh sách lần đầu (tránh làm chậm lúc khởi động).</summary>
     private void DefFontBox_DropDownOpened(object? sender, EventArgs e)
     {
         if (_fontsLoaded) return;
@@ -1154,29 +1263,7 @@ public partial class MainWindow : Window
 
     // ───────────────────────── Theme ─────────────────────────
 
-    private static bool SystemUsesLightTheme()
-    {
-        try
-        {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-            return key?.GetValue("AppsUseLightTheme") is not int v || v != 0;
-        }
-        catch { return true; }
-    }
-
-    private void ApplyTheme(string theme)
-    {
-        var dark = theme == "Dark" || (theme == "System" && !SystemUsesLightTheme());
-        Resources["WindowBrush"] = new SolidColorBrush(dark ? Color.FromRgb(24, 26, 31) : Color.FromRgb(245, 246, 248));
-        Resources["PanelBrush"] = new SolidColorBrush(dark ? Color.FromRgb(36, 39, 46) : Colors.White);
-        Resources["TextBrush"] = new SolidColorBrush(dark ? Color.FromRgb(238, 240, 245) : Color.FromRgb(23, 32, 51));
-        Resources["BorderBrushX"] = new SolidColorBrush(dark ? Color.FromRgb(62, 67, 78) : Color.FromRgb(218, 222, 229));
-        Resources["RowAltBrush"] = new SolidColorBrush(dark ? Color.FromRgb(42, 45, 53) : Color.FromRgb(247, 248, 250));
-        Resources["SelRowBrush"] = new SolidColorBrush(dark ? Color.FromRgb(44, 62, 102) : Color.FromRgb(227, 236, 255));
-        Resources["HeaderBrush"] = new SolidColorBrush(dark ? Color.FromRgb(50, 54, 64) : Color.FromRgb(237, 240, 244));
-        Resources["ButtonBrush"] = new SolidColorBrush(dark ? Color.FromRgb(58, 62, 72) : Color.FromRgb(241, 243, 246));
-        Resources["InputBrush"] = new SolidColorBrush(dark ? Color.FromRgb(28, 30, 36) : Colors.White);
-    }
+    private void ApplyTheme(string theme) => ThemeManager.Apply(theme);
 
     public static class Native
     {

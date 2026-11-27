@@ -13,9 +13,7 @@ public partial class InfoListWindow : Window
         InitializeComponent();
         Owner = owner;
         Icon = AppIcon.LoadImage();
-        // dùng cùng bảng màu (sáng/tối) với cửa sổ chính
-        foreach (var key in new[] { "WindowBrush", "PanelBrush", "TextBrush", "BorderBrushX" })
-            if (owner.Resources[key] is { } brush) Resources[key] = brush;
+        ThemeManager.HookWindowChrome(this, () => ThemeManager.IsDark(SettingsService.Load().Theme));
 
         Title = title;
         HeadingText.Text = title;
@@ -24,26 +22,50 @@ public partial class InfoListWindow : Window
             Rows.Children.Add(MakeRow(numbered ? (i + 1).ToString() : "✓", lines[i], numbered));
     }
 
-    private static UIElement MakeRow(string marker, string text, bool badge)
+    private UIElement MakeRow(string marker, string text, bool badge)
     {
-        var row = new Grid { Margin = new Thickness(0, 5, 0, 5) };
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(12, 10, 12, 10),
+            Margin = new Thickness(0, 0, 0, 8),
+            BorderThickness = new Thickness(1),
+        };
+        card.SetResourceReference(Border.BackgroundProperty, "PanelBrush");
+        card.SetResourceReference(Border.BorderBrushProperty, "BorderBrushX");
+
+        var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        UIElement mark = badge
-            ? new Border
+        UIElement mark;
+        if (badge)
+        {
+            var circle = new Border
             {
-                Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = new SolidColorBrush(Color.FromRgb(37, 99, 235)),
+                Width = 22, Height = 22, CornerRadius = new CornerRadius(11),
                 HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-                Child = new TextBlock { Text = marker, Foreground = Brushes.White, FontSize = 12, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
-            }
-            : new TextBlock { Text = marker, Foreground = new SolidColorBrush(Color.FromRgb(34, 160, 90)), FontWeight = FontWeights.Bold, FontSize = 16, VerticalAlignment = VerticalAlignment.Top };
+                Child = new TextBlock { Text = marker, Foreground = Brushes.White, FontSize = 11.5, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            };
+            circle.SetResourceReference(Border.BackgroundProperty, "BrandGradientBrush");
+            mark = circle;
+        }
+        else
+        {
+            mark = new TextBlock
+            {
+                Text = marker,
+                Foreground = new SolidColorBrush(Color.FromRgb(16, 185, 129)),
+                FontWeight = FontWeights.Bold, FontSize = 15, VerticalAlignment = VerticalAlignment.Top,
+            };
+        }
         row.Children.Add(mark);
 
-        var tb = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, LineHeight = 21, VerticalAlignment = VerticalAlignment.Center };
+        var tb = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, LineHeight = 20, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(tb, 1);
         row.Children.Add(tb);
-        return row;
+        card.Child = row;
+        return card;
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

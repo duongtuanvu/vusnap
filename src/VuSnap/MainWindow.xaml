@@ -2,399 +2,524 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
-        Title="VuSnap" Width="1000" Height="820" MinWidth="900" MinHeight="620"
-        WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
+        Title="VuSnap" Width="476" Height="800" MinWidth="440" MinHeight="640"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
+        Background="{DynamicResource WindowBrush}" Foreground="{DynamicResource TextBrush}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
-  <Window.Resources>
-    <SolidColorBrush x:Key="WindowBrush" Color="#FFF5F6F8"/>
-    <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFFFF"/>
-    <SolidColorBrush x:Key="TextBrush" Color="#FF172033"/>
-    <SolidColorBrush x:Key="BorderBrushX" Color="#FFDADEE5"/>
-    <SolidColorBrush x:Key="RowAltBrush" Color="#FFF7F8FA"/>
-    <SolidColorBrush x:Key="HeaderBrush" Color="#FFEDF0F4"/>
-    <SolidColorBrush x:Key="SelRowBrush" Color="#FFE3ECFF"/>
-    <SolidColorBrush x:Key="ButtonBrush" Color="#FFF1F3F6"/>
-    <SolidColorBrush x:Key="InputBrush" Color="#FFFFFFFF"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#FF2563EB"/>
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="58" CornerRadius="18" GlassFrameThickness="1" ResizeBorderThickness="6" UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
 
-    <!-- ── Text / Card / Divider ── -->
-    <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/></Style>
-    <Style x:Key="Section" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-      <Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,10"/>
-    </Style>
-    <Style x:Key="Muted" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-      <Setter Property="Opacity" Value="0.65"/><Setter Property="TextWrapping" Value="Wrap"/>
-    </Style>
-    <Style x:Key="SmallLabel" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-      <Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Opacity" Value="0.8"/><Setter Property="Margin" Value="0,0,8,0"/>
-    </Style>
-    <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-      <Setter Property="Opacity" Value="0.75"/><Setter Property="FontSize" Value="12"/><Setter Property="Margin" Value="0,12,0,4"/>
-    </Style>
-    <Style x:Key="Card" TargetType="Border">
-      <Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrushX}"/>
-      <Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="12"/>
-    </Style>
-    <Style x:Key="Divider" TargetType="Border">
-      <Setter Property="Height" Value="1"/><Setter Property="Background" Value="{DynamicResource BorderBrushX}"/><Setter Property="Margin" Value="0,18,0,16"/>
-    </Style>
+  <Grid ClipToBounds="True">
+    <!-- Subtle ambient pastel aura washes -->
+    <Ellipse Width="280" Height="280" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-110,-150,0,0" Fill="{DynamicResource AuraLavenderBrush}" IsHitTestVisible="False"/>
+    <Ellipse Width="240" Height="240" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-100,-120" Fill="{DynamicResource AuraPeriwinkleBrush}" IsHitTestVisible="False"/>
+    <Ellipse Width="200" Height="200" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-90,0,0,-100" Fill="{DynamicResource AuraMintBrush}" IsHitTestVisible="False"/>
 
-    <!-- ── Button: bo góc, hover/pressed bằng độ mờ (dùng được cả với nút có màu riêng) ── -->
-    <Style TargetType="Button">
-      <Setter Property="Padding" Value="14,6"/>
-      <Setter Property="Margin" Value="0,0,8,0"/>
-      <Setter Property="MinHeight" Value="32"/>
-      <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="Background" Value="{DynamicResource ButtonBrush}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushX}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <!-- Header -->
+      <Grid Grid.Row="0" Margin="20,16,16,10">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <!-- VuSnap Brand Mark harmonized with pastel palette -->
+          <Border Width="32" Height="32" CornerRadius="9" Background="#FF181C3A" Margin="0,0,10,0">
+            <Viewbox Width="24" Height="24">
+              <Canvas Width="256" Height="256">
+                <Path Data="M83,49 H58 Q49,49 49,58 V84 M173,49 H198 Q207,49 207,58 V84 M49,172 V198 Q49,207 58,207 H83 M207,172 V198 Q207,207 198,207 H173"
+                      Stroke="{DynamicResource MintBrush}" StrokeThickness="15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                <Path Data="M77,88 L128,178 L179,88" Stroke="White" StrokeThickness="24" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                <Ellipse Canvas.Left="167" Canvas.Top="76" Width="24" Height="24" Fill="{DynamicResource MintBrush}"/>
+              </Canvas>
+            </Viewbox>
+          </Border>
+          <TextBlock Text="VuSnap" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+          <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="9,0,0,0" VerticalAlignment="Center">
+            <TextBlock x:Name="VersionBadge" Text="v0.4.3" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button x:Name="HelpButton" Style="{StaticResource IconButton}" Click="Help_Click" Margin="0,0,2,0">
+            <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18"/>
+            <Button.ContextMenu>
+              <ContextMenu x:Name="HelpMenu">
+                <MenuItem x:Name="MenuAbout" Click="Info_Click"/>
+                <MenuItem x:Name="MenuFeatures" Click="Features_Click"/>
+                <MenuItem x:Name="MenuHowTo" Click="HowTo_Click"/>
+                <Separator x:Name="MenuSep"/>
+                <MenuItem x:Name="MenuDonate" Click="Donate_Click" Visibility="Collapsed"/>
+              </ContextMenu>
+            </Button.ContextMenu>
+          </Button>
+          <Button x:Name="MinButton" Style="{StaticResource IconButton}" Click="Minimize_Click" Margin="0,0,2,0">
+            <mi:MaterialIcon Kind="Minus" Width="18" Height="18"/>
+          </Button>
+          <Button x:Name="CloseButton" Style="{StaticResource IconButton}" Click="CloseWin_Click">
+            <mi:MaterialIcon Kind="Close" Width="17" Height="17"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- Toast / Countdown Banner -->
+      <Border x:Name="StatusBanner" Grid.Row="1" Margin="20,0,20,10" Padding="12,8" CornerRadius="11"
+              Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Visibility="Collapsed">
+        <DockPanel>
+          <Button x:Name="CancelCaptureButton" DockPanel.Dock="Right" Padding="10,4" MinHeight="26" FontSize="11.5" Margin="8,0,0,0"
+                  Click="CancelCapture_Click" Visibility="Collapsed"/>
+          <TextBlock x:Name="StatusText" Style="{StaticResource Muted}" Foreground="{DynamicResource TextBrush}" FontSize="12" VerticalAlignment="Center"/>
+        </DockPanel>
+      </Border>
+
+      <!-- 4 Tab Pages -->
+      <Grid Grid.Row="2" Margin="20,0,20,12">
+        <!-- TAB 1: CAPTURE -->
+        <Grid x:Name="PageCapture" Visibility="Visible">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <StackPanel Grid.Row="0">
+            <!-- Primary 3-up Mode Bar -->
+            <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="13" Padding="4">
+              <UniformGrid Columns="3">
+                <RadioButton x:Name="ModeRegion" Style="{StaticResource SegmentRadio}" GroupName="CapMode" Tag="Region" Checked="ModeRadio_Checked">
+                  <StackPanel Orientation="Horizontal">
+                    <mi:MaterialIcon Kind="Selection" Width="15" Height="15" Margin="0,0,6,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    <TextBlock x:Name="ModeRegionText" Text="Region" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="ModeActiveWindow" Style="{StaticResource SegmentRadio}" GroupName="CapMode" Tag="ActiveWindow" Checked="ModeRadio_Checked">
+                  <StackPanel Orientation="Horizontal">
+                    <mi:MaterialIcon Kind="ApplicationOutline" Width="15" Height="15" Margin="0,0,6,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    <TextBlock x:Name="ModeActiveWindowText" Text="Window" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="ModeMonitor" Style="{StaticResource SegmentRadio}" GroupName="CapMode" Tag="Monitor" Checked="ModeRadio_Checked">
+                  <StackPanel Orientation="Horizontal">
+                    <mi:MaterialIcon Kind="Monitor" Width="15" Height="15" Margin="0,0,6,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    <TextBlock x:Name="ModeMonitorText" Text="Monitor" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                  </StackPanel>
+                </RadioButton>
+              </UniformGrid>
             </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.86"/></Trigger>
-              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.7"/></Trigger>
-              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Bd" Property="Opacity" Value="0.45"/></Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
 
-    <!-- Nút biểu tượng nhỏ (✕ trong bảng) -->
-    <Style x:Key="IconButton" TargetType="Button">
-      <Setter Property="Width" Value="30"/><Setter Property="Height" Value="30"/><Setter Property="MinHeight" Value="0"/>
-      <Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="0"/><Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border x:Name="Bd" CornerRadius="6" Background="Transparent">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.FontSize="12"/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBrush}"/></Trigger>
-              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.7"/></Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
+            <!-- Secondary Capture Modes (All 8 real VuSnap modes reachable in 1 click) -->
+            <WrapPanel Margin="0,8,0,10" HorizontalAlignment="Center">
+              <RadioButton x:Name="ModeDesktop" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="Desktop" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeWindowPicker" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="WindowPicker" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeWindowHover" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="WindowHover" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeRepeat" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="Repeat" Margin="0,0,5,5" Checked="ModeRadio_Checked"/>
+              <RadioButton x:Name="ModeColorPicker" Style="{StaticResource ChipRadio}" GroupName="CapMode" Tag="ColorPicker" Margin="0,0,0,5" Checked="ModeRadio_Checked"/>
+            </WrapPanel>
 
-    <!-- ── TextBox: bo góc, viền xanh khi focus ── -->
-    <Style TargetType="TextBox">
-      <Setter Property="MinHeight" Value="32"/>
-      <Setter Property="Padding" Value="8,4"/>
-      <Setter Property="VerticalContentAlignment" Value="Center"/>
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="Background" Value="{DynamicResource InputBrush}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushX}"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="TextBox">
-            <Border x:Name="Bd" CornerRadius="7" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-              <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
-              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Bd" Property="Opacity" Value="0.5"/></Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-
-    <!-- ── ComboBox: bo góc, popup phẳng ── -->
-    <Style TargetType="ComboBoxItem">
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="Padding" Value="10,6"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="ComboBoxItem">
-            <Border x:Name="Bd" CornerRadius="6" Padding="{TemplateBinding Padding}" Background="Transparent">
-              <ContentPresenter/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonBrush}"/></Trigger>
-              <Trigger Property="IsSelected" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource HeaderBrush}"/></Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-    <Style TargetType="ComboBox">
-      <Setter Property="MinHeight" Value="32"/>
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="ComboBox">
-            <Grid>
-              <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
-                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
-                <ToggleButton.Template>
-                  <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Bd" CornerRadius="7" Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1">
-                      <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,11,0" Data="M0,0 L4,4 L8,0"
-                            Stroke="{DynamicResource TextBrush}" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.7"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
-                      <Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
-                    </ControlTemplate.Triggers>
-                  </ControlTemplate>
-                </ToggleButton.Template>
-              </ToggleButton>
-              <ContentPresenter IsHitTestVisible="False" Margin="10,0,30,0" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                TextElement.Foreground="{TemplateBinding Foreground}"/>
-              <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
-                <Border MinWidth="{Binding ActualWidth, ElementName=Toggle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,4,0,0" CornerRadius="8"
-                        Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1">
-                  <ScrollViewer Margin="3" SnapsToDevicePixels="True"><ItemsPresenter/></ScrollViewer>
+            <!-- Delay -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ClockOutline" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0"/>
+                  <TextBlock x:Name="CaptureDelayLabel" Style="{StaticResource SmallLabel}"/>
+                </StackPanel>
+                <Border HorizontalAlignment="Right" Background="{DynamicResource SubtleSurfaceBrush}" CornerRadius="10" Padding="3">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="Delay0" Style="{StaticResource SegmentRadio}" GroupName="CapDelay" Tag="0" Padding="9,4" FontSize="12" Checked="DelayRadio_Checked"/>
+                    <RadioButton x:Name="Delay3" Style="{StaticResource SegmentRadio}" GroupName="CapDelay" Tag="3" Padding="9,4" FontSize="12" Checked="DelayRadio_Checked"/>
+                    <RadioButton x:Name="Delay5" Style="{StaticResource SegmentRadio}" GroupName="CapDelay" Tag="5" Padding="9,4" FontSize="12" Checked="DelayRadio_Checked"/>
+                    <RadioButton x:Name="Delay10" Style="{StaticResource SegmentRadio}" GroupName="CapDelay" Tag="10" Padding="9,4" FontSize="12" Checked="DelayRadio_Checked"/>
+                  </StackPanel>
                 </Border>
-              </Popup>
-            </Grid>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="Margin" Value="0,5,0,5"/></Style>
-
-    <!-- Nút chọn vị trí thanh tool -->
-    <Style x:Key="PosButton" TargetType="RadioButton">
-      <Setter Property="Width" Value="76"/><Setter Property="Height" Value="34"/><Setter Property="Margin" Value="3"/><Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="RadioButton">
-            <Border x:Name="Bd" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushX}" Background="{DynamicResource ButtonBrush}">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsChecked" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
-                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                <Setter Property="Foreground" Value="White"/>
-              </Trigger>
-              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.85"/></Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-  </Window.Resources>
-
-  <Grid Margin="20,18,20,18">
-    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-
-    <!-- Cài đặt chung: một hàng + dòng trạng thái -->
-    <Border Style="{StaticResource Card}" Padding="20,14">
-      <StackPanel>
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/><ColumnDefinition Width="160"/>
-            <ColumnDefinition Width="Auto"/><ColumnDefinition Width="140"/>
-            <ColumnDefinition Width="Auto"/><ColumnDefinition Width="180"/>
-            <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
-          </Grid.ColumnDefinitions>
-          <TextBlock x:Name="LangLabel" Style="{StaticResource SmallLabel}"/>
-          <ComboBox x:Name="LangBox" Grid.Column="1" Margin="0,0,28,0" SelectionChanged="LangBox_SelectionChanged">
-            <ComboBoxItem Tag="en" Content="English"/><ComboBoxItem Tag="vi" Content="Tiếng Việt"/>
-          </ComboBox>
-          <TextBlock x:Name="ThemeLabel" Grid.Column="2" Style="{StaticResource SmallLabel}"/>
-          <ComboBox x:Name="ThemeBox" Grid.Column="3" Margin="0,0,28,0" SelectionChanged="ThemeBox_SelectionChanged">
-            <ComboBoxItem Tag="Light"/><ComboBoxItem Tag="Dark"/><ComboBoxItem Tag="System"/>
-          </ComboBox>
-          <TextBlock x:Name="HotkeyLabel" Grid.Column="4" Style="{StaticResource SmallLabel}"/>
-          <TextBox x:Name="HotkeyBox" Grid.Column="5" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Arrow" TextAlignment="Center" PreviewKeyDown="HotkeyBox_PreviewKeyDown"/>
-          <Button x:Name="ResetButton" Grid.Column="7" Margin="0" Click="Reset_Click"/>
-        </Grid>
-        <WrapPanel Margin="0,12,0,0">
-          <TextBlock x:Name="CaptureModeLabel" Style="{StaticResource SmallLabel}"/>
-          <ComboBox x:Name="CaptureModeBox" Width="180" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">
-            <ComboBoxItem Tag="Region"/><ComboBoxItem Tag="Monitor"/><ComboBoxItem Tag="Desktop"/><ComboBoxItem Tag="ActiveWindow"/><ComboBoxItem Tag="WindowPicker"/><ComboBoxItem Tag="WindowHover"/><ComboBoxItem Tag="Repeat"/><ComboBoxItem Tag="ColorPicker"/>
-          </ComboBox>
-          <TextBlock x:Name="CaptureDelayLabel" Style="{StaticResource SmallLabel}"/>
-          <ComboBox x:Name="CaptureDelayBox" Width="100" Margin="0,0,12,0" SelectionChanged="CapturePreferences_Changed">
-            <ComboBoxItem Tag="0"/><ComboBoxItem Tag="3"/><ComboBoxItem Tag="5"/><ComboBoxItem Tag="10"/>
-          </ComboBox>
-          <Button x:Name="CaptureNowButton" Click="CaptureNow_Click" Margin="0,0,8,0"/>
-          <Button x:Name="CancelCaptureButton" Click="CancelCapture_Click" IsEnabled="False"/>
-        </WrapPanel>
-        <TextBlock x:Name="StatusText" Style="{StaticResource Muted}" Margin="0,10,0,0" Visibility="Collapsed"/>
-      </StackPanel>
-    </Border>
-
-    <!-- Thân: tùy chọn hiển thị (trái) | bảng nút & phím tắt (phải) -->
-    <Grid Grid.Row="1" Margin="0,14,0,0">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="340"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-
-      <Border Style="{StaticResource Card}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="20,18,20,20">
-            <!-- Hệ thống: đặt trên cùng -->
-            <TextBlock x:Name="SysTitle" Style="{StaticResource Section}" Margin="0,0,0,4"/>
-            <CheckBox x:Name="StartBox" Checked="System_Changed" Unchecked="System_Changed"/>
-            <CheckBox x:Name="TrayBox" Checked="System_Changed" Unchecked="System_Changed"/>
-            <Border Style="{StaticResource Divider}"/>
-
-            <!-- Vị trí thanh công cụ: sơ đồ trực quan -->
-            <TextBlock x:Name="PosTitle" Style="{StaticResource Section}"/>
-            <Grid HorizontalAlignment="Center">
-              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-              <RadioButton x:Name="PosTop" Grid.Column="1" Width="150" Height="30" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Top" Checked="Pos_Checked"/>
-              <RadioButton x:Name="PosLeft" Grid.Row="1" Width="34" Height="76" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Left" Checked="Pos_Checked"/>
-              <Grid Grid.Row="1" Grid.Column="1" Width="150" Height="76" Margin="3">
-                <Rectangle Stroke="{DynamicResource BorderBrushX}" StrokeThickness="1.5" StrokeDashArray="4 3" RadiusX="6" RadiusY="6" Fill="{DynamicResource RowAltBrush}"/>
-                <TextBlock x:Name="PosCenter" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Opacity=".55"/>
               </Grid>
-              <RadioButton x:Name="PosRight" Grid.Row="1" Grid.Column="2" Width="34" Height="76" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Right" Checked="Pos_Checked"/>
-              <RadioButton x:Name="PosBottom" Grid.Row="2" Grid.Column="1" Width="150" Height="30" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Bottom" Checked="Pos_Checked"/>
-            </Grid>
-
-            <CheckBox x:Name="MergeBox" Margin="0,16,0,0" Checked="Display_Changed" Unchecked="Display_Changed"/>
-            <CheckBox x:Name="SplitBox" Checked="Display_Changed" Unchecked="Display_Changed"/>
-            <CheckBox x:Name="HintsBox" Checked="Display_Changed" Unchecked="Display_Changed"/>
-            <CheckBox x:Name="LoupeBox" Checked="Display_Changed" Unchecked="Display_Changed"/>
-
-            <Border Style="{StaticResource Divider}"/>
-            <TextBlock x:Name="OutlineTitle" Style="{StaticResource Section}" TextWrapping="Wrap"/>
-            <Grid>
-              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <Slider x:Name="OutlineSlider" Minimum="10" Maximum="100" Value="100" ValueChanged="OutlineSlider_Changed" VerticalAlignment="Center"/>
-              <TextBlock x:Name="OutlineValue" Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Width="40" TextAlignment="Right"/>
-            </Grid>
-            <Border Height="30" Margin="0,8,0,0" Background="#FFBFC3C9" CornerRadius="6">
-              <Rectangle x:Name="OutlinePreview" Stroke="#FF0A64FF" StrokeThickness="1" StrokeDashArray="4 3" Margin="6"/>
             </Border>
 
-            <Border Style="{StaticResource Divider}"/>
-            <TextBlock x:Name="DefTitle" Style="{StaticResource Section}" Margin="0,0,0,2"/>
-            <TextBlock x:Name="DefColorLabel" Style="{StaticResource FieldLabel}"/>
-            <Grid>
-              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <Border x:Name="DefColorPreview" Width="32" Height="32" CornerRadius="7" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" Margin="0,0,8,0"/>
-              <TextBox x:Name="DefHex" Grid.Column="1" KeyDown="DefHex_KeyDown" LostFocus="DefHex_LostFocus"/>
-            </Grid>
-            <WrapPanel x:Name="DefSwatches" Margin="0,8,0,0"/>
+            <!-- Global Hotkey -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="KeyboardOutline" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0"/>
+                  <TextBlock x:Name="HotkeyLabel" Style="{StaticResource SmallLabel}"/>
+                </StackPanel>
+                <TextBox x:Name="HotkeyBox" Style="{StaticResource KeycapBox}" HorizontalAlignment="Right" MinWidth="128" PreviewKeyDown="HotkeyBox_PreviewKeyDown"/>
+              </Grid>
+            </Border>
 
-            <TextBlock x:Name="DefThickLabel" Style="{StaticResource FieldLabel}"/>
-            <Grid>
-              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <Slider x:Name="DefThickSlider" Minimum="1" Maximum="40" Value="3" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" ValueChanged="DefThick_Changed"/>
-              <TextBlock x:Name="DefThickValue" Grid.Column="1" Margin="10,0,0,0" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
-            </Grid>
+            <!-- Magnifier Toggle -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <mi:MaterialIcon Kind="MagnifyPlusOutline" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="LoupeLabel" Grid.Column="1" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                <CheckBox x:Name="LoupeBox" Grid.Column="2" Style="{StaticResource ProToggle}" Checked="Display_Changed" Unchecked="Display_Changed"/>
+              </Grid>
+            </Border>
 
-            <TextBlock x:Name="DefOpacityLabel" Style="{StaticResource FieldLabel}"/>
-            <Grid>
-              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <Slider x:Name="DefOpacitySlider" Minimum="5" Maximum="100" Value="100" VerticalAlignment="Center" ValueChanged="DefOpacity_Changed"/>
-              <TextBlock x:Name="DefOpacityValue" Grid.Column="1" Margin="10,0,0,0" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
-            </Grid>
+            <!-- Auto-copy Toggle -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,14">
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="CopyAfterLabel" Grid.Column="1" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                <CheckBox x:Name="CopyAfterBox" Grid.Column="2" Style="{StaticResource ProToggle}" Checked="CopyAfter_Changed" Unchecked="CopyAfter_Changed"/>
+              </Grid>
+            </Border>
 
-            <TextBlock x:Name="DefStrokeLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefStrokeBox" SelectionChanged="DefStroke_Changed"/>
+            <!-- Hero Primary CTA -->
+            <Button x:Name="CaptureNowButton" Style="{StaticResource GradientButton}" Click="CaptureNow_Click"/>
 
-            <TextBlock x:Name="DefAspectLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefAspectBox" SelectionChanged="DefAspect_Changed"/>
-
-            <TextBlock x:Name="DefArrowLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefArrowBox" SelectionChanged="DefArrow_Changed"/>
-
-            <CheckBox x:Name="DefCornersBox" Margin="0,12,0,0" Checked="DefCorners_Changed" Unchecked="DefCorners_Changed"/>
-
-            <TextBlock x:Name="DefZoomLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefZoomBox" SelectionChanged="DefZoom_Changed"/>
-
-            <TextBlock x:Name="DefLensLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefLensBox" SelectionChanged="DefLens_Changed"/>
-
-            <TextBlock x:Name="DefFontLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefFontBox" DropDownOpened="DefFontBox_DropDownOpened" SelectionChanged="DefFont_Changed"/>
-            <TextBlock x:Name="DefWeightLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefWeightBox" SelectionChanged="DefWeight_Changed"/>
-            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-              <CheckBox x:Name="DefItalicBox" Checked="DefFontStyle_Changed" Unchecked="DefFontStyle_Changed"/>
+            <!-- Shortcut hint -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+              <TextBlock x:Name="OrPressText" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center"/>
+              <Border Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1,1,1,2" CornerRadius="6" Padding="7,2" Margin="6,0">
+                <TextBlock x:Name="HotkeyHintChip" FontFamily="Cascadia Mono, Consolas" FontSize="11" FontWeight="SemiBold"/>
+              </Border>
+              <TextBlock x:Name="AnywhereText" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
+          </StackPanel>
 
-            <TextBlock x:Name="DefLineTypeLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="DefLineTypeBox" SelectionChanged="DefLineType_Changed"/>
-
-            <Border Style="{StaticResource Divider}"/>
-            <TextBlock x:Name="SaveTitle" Style="{StaticResource Section}" Margin="0,0,0,2"/>
-            <TextBlock x:Name="SaveDirLabel" Style="{StaticResource FieldLabel}"/>
-            <TextBox x:Name="SaveDirBox" TextWrapping="NoWrap" KeyDown="SaveDir_KeyDown" LostFocus="SaveDir_LostFocus"/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button x:Name="BrowseButton" Padding="12,5" Click="BrowseSaveDir_Click"/>
-              <Button x:Name="OpenDirButton" Padding="12,5" Click="OpenSaveDir_Click"/>
+          <!-- 3-Step Workflow Strip pinned cleanly at bottom of Capture tab -->
+          <UniformGrid Grid.Row="2" Columns="3" Margin="0,8,0,2">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Border Width="20" Height="20" CornerRadius="10" Background="#FF181C3A" Margin="0,0,6,0">
+                <TextBlock Text="1" Foreground="{DynamicResource MintBrush}" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock x:Name="Step1Text" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
             </StackPanel>
-            <TextBlock x:Name="SaveFormatLabel" Style="{StaticResource FieldLabel}"/>
-            <ComboBox x:Name="SaveFormatBox" SelectionChanged="SaveFormat_Changed">
-              <ComboBoxItem Tag="PNG" Content="PNG"/><ComboBoxItem Tag="JPG" Content="JPG"/>
-            </ComboBox>
-            <CheckBox x:Name="CopyAfterBox" Margin="0,12,0,5" Checked="CopyAfter_Changed" Unchecked="CopyAfter_Changed"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Border Width="20" Height="20" CornerRadius="10" Background="#FF181C3A" Margin="0,0,6,0">
+                <TextBlock Text="2" Foreground="{DynamicResource MintBrush}" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock x:Name="Step2Text" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Border Width="20" Height="20" CornerRadius="10" Background="#FF181C3A" Margin="0,0,6,0">
+                <TextBlock Text="3" Foreground="{DynamicResource MintBrush}" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock x:Name="Step3Text" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </UniformGrid>
+        </Grid>
+
+        <!-- TAB 2: TOOLS & SHORTCUTS -->
+        <Grid x:Name="PageTools" Visibility="Collapsed">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <!-- Search Box -->
+          <Grid Grid.Row="0" Margin="0,0,0,9">
+            <TextBox x:Name="SearchBox" Height="38" Padding="34,4,32,4" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushX}" TextChanged="SearchBox_TextChanged"/>
+            <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Foreground="{DynamicResource MutedBrush}" Margin="11,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+            <TextBlock x:Name="SearchPlaceholder" Foreground="{DynamicResource MutedBrush}" FontSize="12.5" Margin="35,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+            <Button x:Name="SearchClear" Style="{StaticResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right" Margin="0,0,6,0" Visibility="Collapsed" Click="SearchClear_Click"/>
+          </Grid>
+
+          <!-- Category Filter Pills -->
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <RadioButton x:Name="FilterAll" Style="{StaticResource ChipRadio}" GroupName="ToolFilter" Tag="All" IsChecked="True" Margin="0,0,6,0" Checked="ToolFilter_Changed"/>
+            <RadioButton x:Name="FilterTools" Style="{StaticResource ChipRadio}" GroupName="ToolFilter" Tag="Tools" Margin="0,0,6,0" Checked="ToolFilter_Changed"/>
+            <RadioButton x:Name="FilterToolbar" Style="{StaticResource ChipRadio}" GroupName="ToolFilter" Tag="Toolbar" Margin="0,0,6,0" Checked="ToolFilter_Changed"/>
+            <RadioButton x:Name="FilterActions" Style="{StaticResource ChipRadio}" GroupName="ToolFilter" Tag="Actions" Checked="ToolFilter_Changed"/>
+          </StackPanel>
+
+          <!-- Tool & Shortcut List -->
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="TableRows" Margin="0,0,4,0"/>
+          </ScrollViewer>
+
+          <!-- Footer Actions -->
+          <StackPanel Grid.Row="3" Margin="0,8,0,0">
+            <TextBlock x:Name="TableHint" Style="{StaticResource Muted}" FontSize="11" Margin="0,0,0,6"/>
+            <DockPanel>
+              <Button x:Name="ResetShortcutsButton" DockPanel.Dock="Left" Style="{StaticResource GhostLinkButton}" Click="ResetShortcuts_Click"/>
+              <Button x:Name="ResetOrderButton" DockPanel.Dock="Right" HorizontalAlignment="Right" Style="{StaticResource GhostLinkButton}" Click="ResetOrder_Click"/>
+            </DockPanel>
+          </StackPanel>
+        </Grid>
+
+        <!-- TAB 3: TOOLBAR & ANNOTATION DEFAULTS -->
+        <ScrollViewer x:Name="PageToolbar" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,4,0">
+            <!-- Spatial Dock Card -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <StackPanel>
+                <TextBlock x:Name="PosTitle" Style="{StaticResource SectionCaps}" Margin="0,0,0,10"/>
+                <Grid HorizontalAlignment="Center">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="168"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions>
+                  <Grid.RowDefinitions><RowDefinition Height="32"/><RowDefinition Height="66"/><RowDefinition Height="32"/></Grid.RowDefinitions>
+                  <RadioButton x:Name="PosTop" Grid.Column="1" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Top" Margin="4,0" Checked="Pos_Checked"/>
+                  <RadioButton x:Name="PosLeft" Grid.Row="1" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Left" Margin="0,4" Checked="Pos_Checked"/>
+                  <Grid Grid.Row="1" Grid.Column="1" Margin="4">
+                    <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="9"/>
+                    <Rectangle Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" StrokeDashArray="4 3" RadiusX="9" RadiusY="9" Opacity="0.7"/>
+                    <TextBlock x:Name="PosCenter" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
+                  </Grid>
+                  <RadioButton x:Name="PosRight" Grid.Row="1" Grid.Column="2" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Right" Margin="0,4" Checked="Pos_Checked"/>
+                  <RadioButton x:Name="PosBottom" Grid.Row="2" Grid.Column="1" Style="{StaticResource PosButton}" GroupName="Pos" Tag="Bottom" Margin="4,0" Checked="Pos_Checked"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Behavior Toggles -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,8">
+              <Grid>
+                <TextBlock x:Name="MergeLabel" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,50,0"/>
+                <CheckBox x:Name="MergeBox" Style="{StaticResource ProToggle}" Checked="Display_Changed" Unchecked="Display_Changed"/>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,8">
+              <Grid>
+                <TextBlock x:Name="SplitLabel" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,50,0"/>
+                <CheckBox x:Name="SplitBox" Style="{StaticResource ProToggle}" Checked="Display_Changed" Unchecked="Display_Changed"/>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,8">
+              <Grid>
+                <TextBlock x:Name="HintsLabel" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,50,0"/>
+                <CheckBox x:Name="HintsBox" Style="{StaticResource ProToggle}" Checked="Display_Changed" Unchecked="Display_Changed"/>
+              </Grid>
+            </Border>
+
+            <!-- Selected-object Outline Opacity -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <StackPanel>
+                <Grid Margin="0,0,0,4">
+                  <TextBlock x:Name="OutlineTitle" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,48,0"/>
+                  <TextBlock x:Name="OutlineValue" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}"/>
+                </Grid>
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="72"/></Grid.ColumnDefinitions>
+                  <Slider x:Name="OutlineSlider" Minimum="10" Maximum="100" Value="20" ValueChanged="OutlineSlider_Changed" Margin="0,0,12,0"/>
+                  <Border Grid.Column="1" Height="24" Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="6">
+                    <Rectangle x:Name="OutlinePreview" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" StrokeDashArray="3 2" Margin="4"/>
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Default Annotation Styles -->
+            <Border Style="{StaticResource WellCard}">
+              <StackPanel>
+                <TextBlock x:Name="DefTitle" Style="{StaticResource SectionCaps}" Margin="0,0,0,8"/>
+
+                <TextBlock x:Name="DefColorLabel" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="96"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <Border x:Name="DefColorPreview" Width="28" Height="28" CornerRadius="8" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" HorizontalAlignment="Left"/>
+                  <TextBox x:Name="DefHex" Grid.Column="1" MinHeight="28" Padding="8,2" FontFamily="Cascadia Mono, Consolas" FontSize="12" KeyDown="DefHex_KeyDown" LostFocus="DefHex_LostFocus"/>
+                  <WrapPanel x:Name="DefSwatches" Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </Grid>
+
+                <Grid Margin="0,10,0,0">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <Grid><TextBlock x:Name="DefThickLabel" Style="{StaticResource FieldLabel}" Margin="0,0,0,2"/><TextBlock x:Name="DefThickValue" HorizontalAlignment="Right" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+                    <Slider x:Name="DefThickSlider" Minimum="1" Maximum="40" Value="4" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="DefThick_Changed"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <Grid><TextBlock x:Name="DefOpacityLabel" Style="{StaticResource FieldLabel}" Margin="0,0,0,2"/><TextBlock x:Name="DefOpacityValue" HorizontalAlignment="Right" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+                    <Slider x:Name="DefOpacitySlider" Minimum="5" Maximum="100" Value="100" ValueChanged="DefOpacity_Changed"/>
+                  </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,4,0,0">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock x:Name="DefStrokeLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefStrokeBox" SelectionChanged="DefStroke_Changed"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock x:Name="DefAspectLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefAspectBox" SelectionChanged="DefAspect_Changed"/>
+                  </StackPanel>
+                </Grid>
+
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock x:Name="DefArrowLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefArrowBox" SelectionChanged="DefArrow_Changed"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock x:Name="DefLineTypeLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefLineTypeBox" SelectionChanged="DefLineType_Changed"/>
+                  </StackPanel>
+                </Grid>
+
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock x:Name="DefZoomLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefZoomBox" SelectionChanged="DefZoom_Changed"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock x:Name="DefLensLabel" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="DefLensBox" SelectionChanged="DefLens_Changed"/>
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock x:Name="DefFontLabel" Style="{StaticResource FieldLabel}"/>
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="104"/></Grid.ColumnDefinitions>
+                  <ComboBox x:Name="DefFontBox" DropDownOpened="DefFontBox_DropDownOpened" SelectionChanged="DefFont_Changed"/>
+                  <ComboBox x:Name="DefWeightBox" Grid.Column="2" SelectionChanged="DefWeight_Changed"/>
+                </Grid>
+                <TextBlock x:Name="DefWeightLabel" Visibility="Collapsed"/>
+
+                <WrapPanel Margin="0,10,0,2">
+                  <CheckBox x:Name="DefItalicBox" Margin="0,0,16,4" Checked="DefFontStyle_Changed" Unchecked="DefFontStyle_Changed"/>
+                  <CheckBox x:Name="DefCornersBox" Margin="0,0,0,4" Checked="DefCorners_Changed" Unchecked="DefCorners_Changed"/>
+                </WrapPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </ScrollViewer>
-      </Border>
 
-      <Border Grid.Column="2" Style="{StaticResource Card}">
-        <Grid Margin="18,16,18,16">
-          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <TextBlock x:Name="TableTitle" FontSize="15" FontWeight="SemiBold"/>
-          <TextBlock x:Name="TableHint" Grid.Row="1" Style="{StaticResource Muted}" Margin="0,4,0,10"/>
-          <!-- Ô tìm kiếm công cụ -->
-          <Grid Grid.Row="2" Margin="0,0,0,10">
-            <TextBox x:Name="SearchBox" Padding="32,4,30,4" TextChanged="SearchBox_TextChanged"/>
-            <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Opacity=".55" Margin="10,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
-            <TextBlock x:Name="SearchPlaceholder" Opacity=".45" Margin="33,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-            <Button x:Name="SearchClear" Style="{StaticResource IconButton}" Width="26" Height="26" Content="✕" HorizontalAlignment="Right" Margin="0,0,4,0" Visibility="Collapsed" Click="SearchClear_Click"/>
-          </Grid>
-          <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
-            <Grid>
-              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-              <!-- Header cố định -->
-              <Border Background="{DynamicResource HeaderBrush}" Padding="12,8,26,8">
-                <Grid>
-                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="150"/><ColumnDefinition Width="40"/><ColumnDefinition Width="58"/></Grid.ColumnDefinitions>
-                  <TextBlock x:Name="ColName" FontWeight="SemiBold" FontSize="12"/>
-                  <TextBlock x:Name="ColShow" Grid.Column="1" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
-                  <TextBlock x:Name="ColKey" Grid.Column="2" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+        <!-- TAB 4: GENERAL & SAVING -->
+        <ScrollViewer x:Name="PageGeneral" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,4,0">
+            <!-- Language -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="Web" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0"/>
+                  <TextBlock x:Name="LangLabel" Style="{StaticResource SmallLabel}"/>
+                </StackPanel>
+                <ComboBox x:Name="LangBox" HorizontalAlignment="Right" Width="136" SelectionChanged="LangBox_SelectionChanged">
+                  <ComboBoxItem Tag="en" Content="English"/><ComboBoxItem Tag="vi" Content="Tiếng Việt"/>
+                </ComboBox>
+              </Grid>
+            </Border>
+
+            <!-- Theme Segmented Control -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="ThemeLightDark" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0"/>
+                  <TextBlock x:Name="ThemeLabel" Style="{StaticResource SmallLabel}"/>
+                </StackPanel>
+                <Border HorizontalAlignment="Right" Background="{DynamicResource SubtleSurfaceBrush}" CornerRadius="10" Padding="3">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="ThemeLightRadio" Style="{StaticResource SegmentRadio}" GroupName="ThemeSeg" Tag="Light" Padding="10,4" FontSize="12" Checked="ThemeRadio_Checked"/>
+                    <RadioButton x:Name="ThemeDarkRadio" Style="{StaticResource SegmentRadio}" GroupName="ThemeSeg" Tag="Dark" Padding="10,4" FontSize="12" Checked="ThemeRadio_Checked"/>
+                    <RadioButton x:Name="ThemeSystemRadio" Style="{StaticResource SegmentRadio}" GroupName="ThemeSeg" Tag="System" Padding="10,4" FontSize="12" Checked="ThemeRadio_Checked"/>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+
+            <!-- Saving & Format -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <StackPanel>
+                <Grid Margin="0,0,0,9">
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="FolderOutline" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0"/>
+                    <TextBlock x:Name="SaveDirLabel" Style="{StaticResource SmallLabel}"/>
+                  </StackPanel>
+                  <Border HorizontalAlignment="Right" Background="{DynamicResource SubtleSurfaceBrush}" CornerRadius="10" Padding="3">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton x:Name="FmtPngRadio" Style="{StaticResource SegmentRadio}" GroupName="FormatSeg" Tag="PNG" Content="PNG" Padding="10,3" FontSize="11.5" Checked="FormatRadio_Checked"/>
+                      <RadioButton x:Name="FmtJpgRadio" Style="{StaticResource SegmentRadio}" GroupName="FormatSeg" Tag="JPG" Content="JPG" Padding="10,3" FontSize="11.5" Checked="FormatRadio_Checked"/>
+                    </StackPanel>
+                  </Border>
                 </Grid>
-              </Border>
-              <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="TableRows"/>
-              </ScrollViewer>
-            </Grid>
-          </Border>
-          <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,14,0,0">
-            <Button x:Name="ResetShortcutsButton" Click="ResetShortcuts_Click"/>
-            <Button x:Name="ResetOrderButton" Click="ResetOrder_Click"/>
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBox x:Name="SaveDirBox" FontFamily="Cascadia Mono, Consolas" FontSize="11.5" TextWrapping="NoWrap" KeyDown="SaveDir_KeyDown" LostFocus="SaveDir_LostFocus"/>
+                  <Button x:Name="BrowseButton" Grid.Column="1" Margin="6,0,0,0" Padding="9,5" Click="BrowseSaveDir_Click"/>
+                  <Button x:Name="OpenDirButton" Grid.Column="2" Margin="6,0,0,0" Padding="9,5" Click="OpenSaveDir_Click"/>
+                </Grid>
+                <TextBlock x:Name="SaveFormatLabel" Visibility="Collapsed"/>
+              </StackPanel>
+            </Border>
+
+            <!-- System Toggles -->
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,9">
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <mi:MaterialIcon Kind="Power" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="StartLabel" Grid.Column="1" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                <CheckBox x:Name="StartBox" Grid.Column="2" Style="{StaticResource ProToggle}" Checked="System_Changed" Unchecked="System_Changed"/>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource WellCard}" Margin="0,0,0,10">
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <mi:MaterialIcon Kind="TrayArrowDown" Width="17" Height="17" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,9,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TrayLabel" Grid.Column="1" Style="{StaticResource SmallLabel}" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                <CheckBox x:Name="TrayBox" Grid.Column="2" Style="{StaticResource ProToggle}" Checked="System_Changed" Unchecked="System_Changed"/>
+              </Grid>
+            </Border>
+
+            <!-- Import / Export / Restore -->
+            <UniformGrid Columns="3" Margin="0,0,0,10">
+              <Button x:Name="ImportButton" Margin="0,0,6,0" Padding="8,6" Click="Import_Click"/>
+              <Button x:Name="ExportButton" Margin="3,0" Padding="8,6" Click="Export_Click"/>
+              <Button x:Name="ResetButton" Margin="6,0,0,0" Padding="8,6" Foreground="{DynamicResource DangerTextBrush}" Click="Reset_Click"/>
+            </UniformGrid>
+
+            <!-- Info / Features / HowTo -->
+            <UniformGrid Columns="3" Margin="0,0,0,12">
+              <Button x:Name="InfoButton" Margin="0,0,6,0" Padding="8,6" FontSize="12" Click="Info_Click"/>
+              <Button x:Name="FeaturesButton" Margin="3,0" Padding="8,6" FontSize="12" Click="Features_Click"/>
+              <Button x:Name="HowToButton" Margin="6,0,0,0" Padding="8,6" FontSize="12" Click="HowTo_Click"/>
+            </UniformGrid>
+            <Button x:Name="DonateButton" Visibility="Collapsed" Margin="0,0,0,10" Background="#FFDB2777" Foreground="White" BorderThickness="0" Click="Donate_Click"/>
+
+            <!-- Tray Status Indicator -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,4">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource MintBrush}" Margin="0,0,7,0" VerticalAlignment="Center"/>
+              <TextBlock x:Name="TrayStatusText" Style="{StaticResource Muted}" FontSize="11.5" VerticalAlignment="Center"/>
+            </StackPanel>
           </StackPanel>
-        </Grid>
+        </ScrollViewer>
+      </Grid>
+
+      <!-- Bottom Navigation Bar -->
+      <Border Grid.Row="3" Background="{DynamicResource NavBgBrush}" BorderBrush="{DynamicResource BorderBrushX}" BorderThickness="0,1,0,0" Padding="12,8,12,10">
+        <UniformGrid Columns="4">
+          <RadioButton x:Name="NavCapture" Style="{StaticResource NavTabRadio}" GroupName="MainNav" Tag="Capture" IsChecked="True" Checked="NavTab_Checked">
+            <StackPanel HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="CropFree" Width="19" Height="19" Margin="0,0,0,3" HorizontalAlignment="Center"/>
+              <TextBlock x:Name="NavCaptureLabel" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavTools" Style="{StaticResource NavTabRadio}" GroupName="MainNav" Tag="Tools" Checked="NavTab_Checked">
+            <StackPanel HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="PencilRuler" Width="19" Height="19" Margin="0,0,0,3" HorizontalAlignment="Center"/>
+              <TextBlock x:Name="NavToolsLabel" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavToolbar" Style="{StaticResource NavTabRadio}" GroupName="MainNav" Tag="Toolbar" Checked="NavTab_Checked">
+            <StackPanel HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="DockBottom" Width="19" Height="19" Margin="0,0,0,3" HorizontalAlignment="Center"/>
+              <TextBlock x:Name="NavToolbarLabel" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+            </StackPanel>
+          </RadioButton>
+          <RadioButton x:Name="NavGeneral" Style="{StaticResource NavTabRadio}" GroupName="MainNav" Tag="General" Checked="NavTab_Checked">
+            <StackPanel HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="TuneVariant" Width="19" Height="19" Margin="0,0,0,3" HorizontalAlignment="Center"/>
+              <TextBlock x:Name="NavGeneralLabel" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+            </StackPanel>
+          </RadioButton>
+        </UniformGrid>
       </Border>
     </Grid>
-
-    <!-- Hàng nút: Thông tin / Tính năng / Cách dùng / Donate -->
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0">
-      <Button x:Name="InfoButton" Padding="18,7" Click="Info_Click"/>
-      <Button x:Name="FeaturesButton" Padding="18,7" Click="Features_Click"/>
-      <Button x:Name="HowToButton" Padding="18,7" Click="HowTo_Click"/>
-      <Button x:Name="DonateButton" Visibility="Collapsed" Padding="18,7" Background="#FFDB2777" Foreground="White" BorderThickness="0" Click="Donate_Click"/>
-      <Button x:Name="ImportButton" Padding="18,7" Margin="32,0,0,0" Click="Import_Click"/>
-      <Button x:Name="ExportButton" Padding="18,7" Margin="12,0,0,0" Click="Export_Click"/>
-    </StackPanel>
   </Grid>
 </Window>
