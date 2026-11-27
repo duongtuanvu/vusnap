@@ -30,8 +30,56 @@ namespace VuSnap.Tests
             run("repeating content is never guessed by the tolerant match", Repeating);
             run("a floating button is not repeated down the image", Floating);
             run("scroll validates bounds, duplicates and cancellation", Limits);
+            run("four repeated rows across a gap cannot join two pages", ShortFalseOverlap);
+            run("auto scroll awaits fresh frames and pauses on starvation", WheelFeedback);
+            run("GPU crop preserves pixels, row pitch and bounds", GpuCropTest.Run);
             run("scroll preserves fixed header and footer", FixedEdges);
             run("scroll crop and mixed-DPI pointer guards", Geometry);
+        }
+
+        static void ShortFalseOverlap()
+        {
+            // Two disjoint views with the same four-row motif at opposite edges.
+            var random = new Random(19041);
+            var first = new int[W * H];
+            var jumped = new int[W * H];
+            for (int i = 0; i < first.Length; i++)
+            {
+                first[i] = random.Next(0x1000000);
+                jumped[i] = random.Next(0x1000000);
+            }
+            Array.Copy(first, (H - 4) * W, jumped, 0, 4 * W);
+            var stitcher = New();
+            Feed(stitcher, first);
+            Check(Feed(stitcher, jumped) == Stitcher.Result.Lost, "tiny overlap accepted");
+            Check(stitcher.Height == H, "unverified rows were published");
+
+            var valid = new int[W * H];
+            Array.Copy(first, W * 80, valid, 0, W * (H - 80));
+            Check(Feed(stitcher, valid) == Stitcher.Result.Added, "valid reference lost");
+        }
+
+        static void WheelFeedback()
+        {
+            var feedback = new ScrollWheelFeedback();
+            var sent = TimeSpan.FromSeconds(10);
+            feedback.Sent(sent);
+            feedback.Observe(sent - TimeSpan.FromMilliseconds(1), 0);
+            Check(feedback.Pending && feedback.UnchangedSteps == 0, "stale frame counted");
+            Check(!feedback.TimedOut(sent.Add(TimeSpan.FromSeconds(1))), "premature timeout");
+            Check(feedback.TimedOut(sent.Add(TimeSpan.FromSeconds(6))) && feedback.Pending, "missing frame acknowledged");
+            feedback.Reset();
+            for (int i = 1; i <= 4; i++)
+            {
+                feedback.Sent(sent);
+                feedback.Observe(sent + TimeSpan.FromMilliseconds(300), 0);
+                feedback.Observe(sent + TimeSpan.FromMilliseconds(400), 0);
+                Check(!feedback.Pending && feedback.UnchangedSteps == i, "expected one observation per wheel");
+                sent += TimeSpan.FromSeconds(1);
+            }
+            feedback.Sent(sent);
+            feedback.Observe(sent + TimeSpan.FromMilliseconds(300), 20);
+            Check(feedback.UnchangedSteps == 0 && !feedback.Pending, "growth must clear idle count");
         }
 
         static void Geometry()

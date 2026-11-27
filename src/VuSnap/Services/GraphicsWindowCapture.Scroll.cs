@@ -2,13 +2,11 @@
 // No screen fallback, no disk files, no network, one worker owns the stitcher.
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Drawing.Imaging;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
-using Windows.Graphics.Imaging;
 using VuSnap.Core;
 using VuSnap.Models;
 using WinRT;
@@ -49,13 +47,13 @@ public static partial class GraphicsWindowCapture
         finally { Marshal.Release(pointer); }
         if (item.Size.Width != width || item.Size.Height != height) throw new CaptureException("ERR_SCROLL_002");
         var stitcher = new Stitcher(crop.Width, crop.Height, Math.Min(24, crop.Width / 8), Stitcher.MaximumDimension);
-        var bytes = new byte[checked(width * height * 4)];
+        var feedback = new ScrollWheelFeedback();
         int[] buffer = new int[checked(crop.Width * crop.Height)];
         var clock = Stopwatch.StartNew();
         Direct3D11CaptureFrame? latest = null;
-        int frames = 0, idleSteps = 0, heightAtWheel = 0;
+        int frames = 0;
         long settleUntil = 250, lastReport = -1000;
-        bool hadFocus = false, wasAuto = false, wheelPending = false, uncertain = false;
+        bool hadFocus = false, wasAuto = false, uncertain = false;
         string reason = "scroll.done", status = "scroll.waiting", lastMessage = "";
         int lastHeight = -1, lastFrames = -1;
         void Report(string message, bool force = false)
@@ -67,6 +65,9 @@ public static partial class GraphicsWindowCapture
             lastMessage = message; lastHeight = stitcher.Height; lastFrames = frames; lastReport = now;
         }
         using (var device = CreateDevice())
+        using (var nativeDevice = ScrollGpuCrop.OpenDevice(device))
+        using (var context = nativeDevice.ImmediateContext)
+        using (var readback = new ScrollGpuCrop(nativeDevice, context, crop))
         using (var pool = Direct3D11CaptureFramePool.CreateFreeThreaded(device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, item.Size))
         using (var session = pool.CreateCaptureSession(item))
         {
@@ -91,7 +92,7 @@ public static partial class GraphicsWindowCapture
                 bool focused = WindowTargets.Foreground() == target.Handle;
                 if (!focused)
                 {
-                    hadFocus = false; wheelPending = false; idleSteps = 0;
+                    hadFocus = false; feedback.Reset();
                     Report("scroll.waiting");
                     await Task.Delay(100, token).ConfigureAwait(false);
                     continue;
@@ -100,7 +101,7 @@ public static partial class GraphicsWindowCapture
                 if (!hadFocus || auto != wasAuto)
                 {
                     settleUntil = now + 250;
-                    wheelPending = false; idleSteps = 0;
+                    feedback.Reset();
                     hadFocus = true; wasAuto = auto;
                 }
                 if (now < settleUntil)
@@ -115,43 +116,42 @@ public static partial class GraphicsWindowCapture
                     latest = null;
                     if (frame.ContentSize.Width != width || frame.ContentSize.Height != height)
                     { reason = "scroll.partial"; break; }
-                    using var software = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frame.Surface, BitmapAlphaMode.Ignore)
-                        .AsTask(token).ConfigureAwait(false);
-                    if (software.PixelWidth != width || software.PixelHeight != height)
-                    { reason = "scroll.partial"; break; }
-                    token.ThrowIfCancellationRequested();
-                    software.CopyToBuffer(bytes.AsBuffer());
-                    if (!SameScrollTarget(target)) { reason = "scroll.partial"; break; }
-                    if (WindowTargets.Foreground() != target.Handle) continue;
-                    int stride = checked(width * 4), cropStride = checked(crop.Width * 4);
-                    for (int y = 0; y < crop.Height; y++)
-                        Buffer.BlockCopy(bytes, checked((crop.Top+y)*stride+crop.Left*4), buffer, y*cropStride, cropStride);
-                    buffer = stitcher.Add(buffer, out var match, out var added, token) ?? new int[checked(crop.Width * crop.Height)];
-                    if (added > 0) { frames++; uncertain = false; status = frames == 1 ? "scroll.ready" : "scroll.capturing"; }
-                    if (match == Stitcher.Result.Full) { reason = "scroll.limit"; break; }
-                    if (match == Stitcher.Result.Lost || match == Stitcher.Result.Up)
+                    if (feedback.Accepts(frame.SystemRelativeTime))
                     {
-                        uncertain = true; control.Auto = false; wheelPending = false;
-                        status = match == Stitcher.Result.Lost ? "scroll.gap" : "scroll.up";
-                        Report(status, true);
+                        token.ThrowIfCancellationRequested();
+                        if (!readback.TryCopy(frame.Surface, width, height, buffer))
+                        { reason = "scroll.partial"; break; }
+                        if (!SameScrollTarget(target)) { reason = "scroll.partial"; break; }
+                        if (WindowTargets.Foreground() != target.Handle) continue;
+                        buffer = stitcher.Add(buffer, out var match, out var added, token) ?? new int[checked(crop.Width * crop.Height)];
+                        if (added > 0) { frames++; uncertain = false; status = frames == 1 ? "scroll.ready" : "scroll.capturing"; }
+                        if (match == Stitcher.Result.Full) { reason = "scroll.limit"; break; }
+                        if (match == Stitcher.Result.Lost || match == Stitcher.Result.Up)
+                        {
+                            uncertain = true; control.Auto = false; feedback.Reset();
+                            status = match == Stitcher.Result.Lost ? "scroll.gap" : "scroll.up";
+                            Report(status, true);
+                        }
+                        else feedback.Observe(frame.SystemRelativeTime, added);
                     }
                 }
 
                 if (control.FinishRequested) break;
-                if (wheelPending)
+                if (feedback.TimedOut(Stopwatch.GetElapsedTime(0)))
                 {
-                    idleSteps = stitcher.Height > heightAtWheel ? 0 : idleSteps + 1;
-                    wheelPending = false;
-                    if (idleSteps >= 4 && control.Auto)
-                    { reason = frames <= 1 ? "scroll.noMovement" : "scroll.end"; break; }
+                    control.Auto = false;
+                    feedback.Reset();
+                    status = "scroll.frameDelayed";
                 }
-                if (frames > 0 && control.Auto)
+                if (feedback.UnchangedSteps >= 4 && control.Auto)
+                { reason = frames <= 1 ? "scroll.noMovement" : "scroll.end"; break; }
+                if (frames > 0 && control.Auto && !feedback.Pending)
                 {
                     // Do not inject a new wheel action until the previous capture has settled.
                     switch (ScrollWheel.TryDown(target, crop, width, height, control, token))
                     {
                         case ScrollWheel.Result.Sent:
-                            wheelPending = true; heightAtWheel = stitcher.Height;
+                            feedback.Sent(Stopwatch.GetElapsedTime(0));
                             settleUntil = clock.ElapsedMilliseconds + 700;
                             status = "scroll.capturing";
                             break;

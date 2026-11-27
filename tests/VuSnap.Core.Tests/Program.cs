@@ -18,6 +18,7 @@ try
 {
     Directory.CreateDirectory(folder);
     VuSnap.Tests.AppTestsScroll.Suite(Test);
+    VuSnap.Tests.EditorRegressionTests.Suite(Test);
     Test("history undo redo and branch", () =>
     {
         var h = new CommandHistory<int>(0, 2);

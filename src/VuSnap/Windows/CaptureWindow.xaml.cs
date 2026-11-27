@@ -144,6 +144,9 @@ public partial class CaptureWindow : Window
     private double _h, _s = 1, _v = 1;
     private int _suppress;      // >0: đang cập nhật UI từ code, bỏ qua event
 
+    private PathGeometry? _penPreview;
+    private bool _penPreviewDirty;
+    private readonly DispatcherTimer _penPreviewTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private FrameworkElement? _current;   // shape đang vẽ
     private readonly List<FrameworkElement> _selection = new();   // các layer đang chọn
     private FrameworkElement? _primary;                            // layer chọn gần nhất (nguồn thuộc tính)
@@ -193,10 +196,16 @@ public partial class CaptureWindow : Window
         _gridSize = Math.Clamp(_cfg.GridSize, 5, 100);
         _gridType = _cfg.GridType == "Dots" ? "Dots" : "Lines";
         _zoom = Math.Clamp(_cfg.DefaultZoom, 1.5, 10);
+        _penPreviewTimer.Tick += (_, _) =>
+        {
+            if (!_penPreviewDirty || _current is not Path { Tag: Ann annotation } path) return;
+            _penPreviewDirty = false;
+            ApplyStrokePath(path, annotation, _penPreview);
+        };
         _zoomSaveTimer.Tick += (_, _) => { _zoomSaveTimer.Stop(); SaveLensDefaults(); };
         _badgeTimer.Tick += (_, _) => { _badgeTimer.Stop(); if (_drag == Drag.None) SizeBadge.Visibility = Visibility.Collapsed; };
         Closing += (_, e) => { if (_outputBusy && !IsEnabled) e.Cancel = true; };
-        Closed += (_, _) => { _zoomSaveTimer.Stop(); _badgeTimer.Stop(); if (_zoomDirty) SaveLensDefaults(); };
+        Closed += (_, _) => { ClearPenPreview(); _zoomSaveTimer.Stop(); _badgeTimer.Stop(); if (_zoomDirty) SaveLensDefaults(); };
         _lensRound = _cfg.DefaultLens != "Square";
         _font = string.IsNullOrWhiteSpace(_cfg.DefaultFont) ? "Segoe UI" : _cfg.DefaultFont;
         _weight = Presets.WeightIds.Contains(_cfg.DefaultFontWeight) ? _cfg.DefaultFontWeight : "SemiBold"; _italic = _cfg.DefaultFontItalic;
@@ -1105,7 +1114,7 @@ public partial class CaptureWindow : Window
         var editSelected = IsAnnTool && _selection.Any(e => e.Tag is Ann { Kind: "Line" });
         if (!editSelected) { Select(null); SetTool("Line"); }
         RefreshPropUi();
-        if (editSelected) ApplyToSelected();
+        if (editSelected) ApplyToSelected(a => a.LineType = _lineType, a => a.Kind == "Line");
     }
 
     private void PickStyle(string id, string kind)
@@ -1116,7 +1125,7 @@ public partial class CaptureWindow : Window
         var editSelected = IsAnnTool && _selection.Any(e => e.Tag is Ann a && IsStrokeKind(a.Kind));
         if (!editSelected) { Select(null); SetTool(kind); }
         RefreshPropUi();
-        if (editSelected) ApplyToSelected();
+        if (editSelected) ApplyToSelected(a => a.Stroke = _style, a => IsStrokeKind(a.Kind));
     }
 
     /// <summary>Chọn độ phóng đại / hình dạng kính lúp: sửa layer kính đang chọn, hoặc đặt mặc định cho kính vẽ sau.</summary>
@@ -1126,7 +1135,8 @@ public partial class CaptureWindow : Window
         if (round is { } r) _lensRound = r;
         var editSelected = IsAnnTool && _selection.Any(e => e.Tag is Ann { Kind: "Magnifier" });
         if (!editSelected) { Select(null); SetTool("Magnifier"); }
-        else ApplyToSelected();
+        else if (zoom.HasValue) ApplyToSelected(a => a.Zoom = _zoom, a => a.Kind == "Magnifier");
+        else if (round.HasValue) ApplyToSelected(a => a.Round = _lensRound, a => a.Kind == "Magnifier");
         SaveLensDefaults(); // nhớ lựa chọn cho lần dùng sau
     }
 
@@ -1214,26 +1224,26 @@ public partial class CaptureWindow : Window
     {
         if (!_ready || _suppress > 0 || PFontBox.SelectedItem is not string name) return;
         _font = name;
-        ApplyToSelected();
+        ApplyToSelected(a => a.Font = _font, a => a.Kind == "Text");
     }
 
     private void PWeight_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_ready || _suppress > 0 || PWeightBox.SelectedItem is not ComboBoxItem { Tag: string id }) return;
-        _weight = id; ApplyToSelected();
+        _weight = id; ApplyToSelected(a => a.Weight = _weight, a => a.Kind == "Text");
     }
 
     private void PLineType_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_ready || _suppress > 0 || PLineTypeBox.SelectedItem is not ComboBoxItem { Tag: string id }) return;
-        _lineType = id; ApplyToSelected();
+        _lineType = id; ApplyToSelected(a => a.LineType = _lineType, a => a.Kind == "Line");
     }
 
     private static FontWeight WeightOf(string w) => w switch
     {
         "Light" => FontWeights.Light, "Normal" => FontWeights.Normal, "Bold" => FontWeights.Bold, _ => FontWeights.SemiBold,
     };
-    private void PItalic_Click(object sender, RoutedEventArgs e) { _italic = PItalicButton.IsChecked == true; ApplyToSelected(); }
+    private void PItalic_Click(object sender, RoutedEventArgs e) { _italic = PItalicButton.IsChecked == true; ApplyToSelected(a => a.Italic = _italic, a => a.Kind == "Text"); }
 
     // ───────────────────────── Lưới căn chỉnh ─────────────────────────
 
@@ -1317,7 +1327,7 @@ public partial class CaptureWindow : Window
         return brush;
     }
 
-    private void PCorners_Click(object sender, RoutedEventArgs e) { _cornersOnly = PCornersBox.IsChecked == true; ApplyToSelected(); }
+    private void PCorners_Click(object sender, RoutedEventArgs e) { _cornersOnly = PCornersBox.IsChecked == true; ApplyToSelected(a => a.CornersOnly = _cornersOnly, a => a.Kind == "Rectangle"); }
 
     /// <summary>Chọn viền đầy đủ / chỉ 4 góc cho hình chữ nhật: sửa hình đang chọn (chế độ chọn) hoặc đặt mặc định cho hình vẽ sau.</summary>
     private void PickCorner(bool cornersOnly)
@@ -1326,14 +1336,14 @@ public partial class CaptureWindow : Window
         var editSelected = IsAnnTool && _selection.Any(e => e.Tag is Ann { Kind: "Rectangle" });
         if (!editSelected) { Select(null); SetTool("Rectangle"); }
         RefreshPropUi();
-        if (editSelected) ApplyToSelected();
+        if (editSelected) ApplyToSelected(a => a.CornersOnly = _cornersOnly, a => a.Kind == "Rectangle");
     }
 
     private void PArrow_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_ready || _suppress > 0 || PArrowBox.SelectedItem is not ComboBoxItem { Tag: string id }) return;
         _arrow = id;
-        ApplyToSelected();
+        ApplyToSelected(a => a.Head = _arrow, a => a.Kind == "Arrow");
     }
 
     /// <summary>Chọn loại mũi tên: sửa mũi tên đang chọn (khi ở chế độ chọn), hoặc đặt mặc định cho mũi tên vẽ sau.</summary>
@@ -1343,7 +1353,7 @@ public partial class CaptureWindow : Window
         var editSelected = IsAnnTool && _selection.Any(e => e.Tag is Ann { Kind: "Arrow" });
         if (!editSelected) { Select(null); SetTool("Arrow"); }
         RefreshPropUi();
-        if (editSelected) ApplyToSelected();
+        if (editSelected) ApplyToSelected(a => a.Head = _arrow, a => a.Kind == "Arrow");
     }
 
     private static UIElement MakeArrowPreview(string id)
@@ -1361,7 +1371,7 @@ public partial class CaptureWindow : Window
     {
         if (!_ready || _suppress > 0 || PStyleBox.SelectedItem is not ComboBoxItem { Tag: string id }) return;
         _style = id;
-        ApplyToSelected();
+        ApplyToSelected(a => a.Stroke = _style, a => IsStrokeKind(a.Kind));
     }
 
     private void SetTool(string? tool)
@@ -1394,11 +1404,11 @@ public partial class CaptureWindow : Window
         _color = c;
         if (!keepHsv) { var (h, s, v) = ToHsv(c); if (s > 0 && v > 0) _h = h; _s = s; _v = v; }
         RefreshPropUi();
-        ApplyToSelected();
+        ApplyToSelected(a => a.Color = _color);
     }
 
-    private void SetThick(double v) { _thick = v; RefreshPropUi(); ApplyToSelected(); }
-    private void SetOpacity(double v) { _opacity = v; RefreshPropUi(); ApplyToSelected(); }
+    private void SetThick(double v) { _thick = v; RefreshPropUi(); ApplyToSelected(a => a.Thick = _thick); }
+    private void SetOpacity(double v) { _opacity = v; RefreshPropUi(); ApplyToSelected(a => a.Opacity = _opacity); }
 
     private void SizeSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { if (_ready && _suppress == 0) SetThick(e.NewValue); }
     private void PSize_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { if (_ready && _suppress == 0) SetThick(e.NewValue); }
@@ -1652,7 +1662,7 @@ public partial class CaptureWindow : Window
                 using (var ctx = g.Open())
                 {
                     ctx.BeginFigure(pts[0], false, false);
-                    ctx.PolyLineTo(pts.Skip(1).ToList(), true, true);
+                    for (int i = 1; i < pts.Count; i++) ctx.LineTo(pts[i], true, true);
                 }
                 g.Freeze();
                 return g;
@@ -1729,11 +1739,11 @@ public partial class CaptureWindow : Window
     }
 
     /// <summary>Dựng lại Path của layer nét: hình học + màu + độ dày + kiểu nét (liền/đứt/chấm/đôi).</summary>
-    private static void ApplyStrokePath(Path p, Ann a)
+    private static void ApplyStrokePath(Path p, Ann a, Geometry? preview = null)
     {
         var br = Frozen(a.Color);
         var th = a.Kind == "Arrow" ? Math.Max(1, a.Thick * 0.6) : a.Thick;
-        var geo = BuildGeometry(a);
+        var geo = preview ?? BuildGeometry(a);
         p.Stroke = br;
         p.StrokeLineJoin = PenLineJoin.Round;
         p.StrokeStartLineCap = p.StrokeEndLineCap = PenLineCap.Round;
@@ -1805,22 +1815,19 @@ public partial class CaptureWindow : Window
         host.Children.Add(bubble);
     }
 
-    private void ApplyToSelected()
+    private void ApplyToSelected(Action<Ann> change, Predicate<Ann>? applies = null)
     {
-        var any = false;
+        bool changed = false;
         foreach (var el in _selection)
-            if (el.Tag is Ann a && Ink.Children.Contains(el))
-            {
-                a.Color = _color; a.Thick = _thick; a.Opacity = _opacity;
-                if (IsStrokeKind(a.Kind)) a.Stroke = _style;
-                if (a.Kind == "Arrow") a.Head = _arrow;
-                if (a.Kind == "Rectangle") a.CornersOnly = _cornersOnly;
-                if (a.Kind == "Magnifier") { a.Zoom = _zoom; a.Round = _lensRound; }
-                if (a.Kind == "Line") a.LineType = _lineType;
-                if (a.Kind == "Text") { a.Font = _font; a.Weight = _weight; a.Italic = _italic; }
-                ApplyStyle(el); any = true;
-            }
-        if (any) { UpdateOutline(); RecordHistory(); }
+        {
+            if (el.Tag is not Ann annotation || !Ink.Children.Contains(el) ||
+                (applies is not null && !applies(annotation))) continue;
+
+            change(annotation);
+            ApplyStyle(el);
+            changed = true;
+        }
+        if (changed) { UpdateOutline(); RecordHistory(); }
     }
 
     // ── Chọn layer: một / nhiều (Ctrl) / dải (Shift) ──
@@ -2084,6 +2091,14 @@ public partial class CaptureWindow : Window
         }
         el.Tag = ann;
         ApplyStyle(el);
+        if (kind == "Pen" && el is Path penPath)
+        {
+            var figure = new PathFigure { StartPoint = p, IsFilled = false };
+            figure.Segments.Add(new PolyLineSegment());
+            _penPreview = new PathGeometry { Figures = { figure } };
+            ApplyStrokePath(penPath, ann, _penPreview);
+            if (ann.Stroke == "Double") _penPreviewTimer.Start();
+        }
         if (kind is "Blur" or "Invert" && el is Rectangle blur)
         {
             // khung xem trước trong lúc kéo; hiệu ứng được áp khi thả chuột
@@ -2131,8 +2146,12 @@ public partial class CaptureWindow : Window
             case Path mp when a.Kind == "Magnifier":
                 ApplyMagnifier(mp, a);
                 break;
+            case Path when a.Kind == "Pen" && _penPreview is not null:
+                a.Pts!.Add(p);
+                ((PolyLineSegment)_penPreview.Figures[0].Segments[0]).Points.Add(p);
+                _penPreviewDirty = true;
+                break;
             case Path sp when IsStrokeKind(a.Kind):
-                if (a.Kind == "Pen") a.Pts!.Add(p);
                 ApplyStrokePath(sp, a);
                 break;
             case Canvas ruler when a.Kind == "Ruler": BuildRuler(ruler, a); break;
@@ -2144,8 +2163,16 @@ public partial class CaptureWindow : Window
         }
     }
 
+    private void ClearPenPreview()
+    {
+        _penPreviewTimer.Stop();
+        _penPreview = null;
+        _penPreviewDirty = false;
+    }
+
     private void EndDraw()
     {
+        ClearPenPreview();
         var el = _current; _current = null;
         if (el?.Tag is not Ann a) return;
 
@@ -2157,6 +2184,7 @@ public partial class CaptureWindow : Window
         };
         if (tiny) { Ink.Children.Remove(el); return; }
 
+        if (a.Kind == "Pen" && el is Path penPath) ApplyStrokePath(penPath, a);
         if (a.Kind is "Blur" or "Invert" && el is Rectangle fx) ApplyEffect(fx);
         Commit(el);
     }

@@ -6,6 +6,8 @@ using Material.Icons.WPF;
 using System.Windows;
 using Application = System.Windows.Application;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -26,6 +28,8 @@ public partial class MainWindow : Window
     private HwndSource? _source;
     private AppSettings _settings = SettingsService.Load();
     private bool _loading;
+    private readonly DispatcherTimer _sliderSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private bool _sliderSettingsDirty, _draggingSettingsSlider;
     private bool _capturing;
     private CancellationTokenSource? _captureCancellation;
     private LastCaptureRegion? _lastRegion;
@@ -61,6 +65,21 @@ public partial class MainWindow : Window
         ThemeManager.HookWindowChrome(this, () => ThemeManager.IsDark(_settings.Theme));
         BuildDefSwatches();
         RefreshAll();
+        _sliderSaveTimer.Tick += (_, _) => FlushSliderSettings();
+        foreach (var slider in new[] { OutlineSlider, DefThickSlider, DefOpacitySlider })
+        {
+            slider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) =>
+            {
+                _draggingSettingsSlider = true;
+                _sliderSaveTimer.Stop();
+            }), true);
+            slider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((_, _) =>
+            {
+                _draggingSettingsSlider = false;
+                FlushSliderSettings();
+            }), true);
+        }
+        Deactivated += (_, _) => FlushSliderSettings();
         // Overlay có thể lưu độ phóng đại/hình dạng kính lúp lần dùng gần nhất -> đồng bộ lại khi quay về cửa sổ này
         Activated += (_, _) => SyncFromDisk();
         SourceInitialized += (_, _) => InitHotkey();
@@ -77,6 +96,7 @@ public partial class MainWindow : Window
 
         Closing += (_, e) =>
         {
+            FlushSliderSettings();
             // Đóng cửa sổ: nếu bật "chạy nền" thì chỉ ẩn xuống khay hệ thống.
             if (_exiting || !_settings.RunInTray) return;
             e.Cancel = true;
@@ -230,6 +250,7 @@ public partial class MainWindow : Window
     private async void StartCaptureMode(CaptureMode mode, int delay)
     {
         if (_capturing) { _captureCancellation?.Cancel(); return; }
+        FlushSliderSettings();
         _capturing = true;
         using var cancellation = new CancellationTokenSource();
         _captureCancellation = cancellation;
@@ -395,9 +416,28 @@ public partial class MainWindow : Window
 
     // ───────────────────────── Đồng bộ UI <-> settings ─────────────────────────
 
+    private void QueueSliderSettingsSave()
+    {
+        _sliderSettingsDirty = true;
+        _sliderSaveTimer.Stop();
+        if (!_draggingSettingsSlider) _sliderSaveTimer.Start();
+    }
+
+    private void FlushSliderSettings()
+    {
+        _sliderSaveTimer.Stop();
+        if (_sliderSettingsDirty) SaveSettings();
+    }
+
     private bool SaveSettings()
     {
-        try { SettingsService.Save(_settings); return true; }
+        try
+        {
+            SettingsService.Save(_settings);
+            _sliderSettingsDirty = false;
+            _sliderSaveTimer.Stop();
+            return true;
+        }
         catch (Exception ex) { ErrorLog.Write(ErrorCodes.SettingsWrite, ex); SetStatus($"[{ErrorCodes.SettingsWrite}]"); return false; }
     }
 
@@ -1054,7 +1094,7 @@ public partial class MainWindow : Window
         if (OutlineValue is null || OutlinePreview is null) return;
         UpdateOutlineLabel();
         if (_loading || !IsInitialized) return;
-        _settings.OutlineOpacity = Math.Round(OutlineSlider.Value) / 100; SaveSettings();
+        _settings.OutlineOpacity = Math.Round(OutlineSlider.Value) / 100; QueueSliderSettingsSave();
     }
 
     private void UpdateOutlineLabel()
@@ -1122,7 +1162,7 @@ public partial class MainWindow : Window
         if (DefThickValue is null) return;
         DefThickValue.Text = $"{(int)DefThickSlider.Value} px";
         if (_loading) return;
-        _settings.DefaultThickness = DefThickSlider.Value; SaveSettings();
+        _settings.DefaultThickness = DefThickSlider.Value; QueueSliderSettingsSave();
     }
 
     private void DefOpacity_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1130,7 +1170,7 @@ public partial class MainWindow : Window
         if (DefOpacityValue is null) return;
         DefOpacityValue.Text = $"{(int)Math.Round(DefOpacitySlider.Value)}%";
         if (_loading) return;
-        _settings.DefaultOpacity = Math.Round(DefOpacitySlider.Value) / 100; SaveSettings();
+        _settings.DefaultOpacity = Math.Round(DefOpacitySlider.Value) / 100; QueueSliderSettingsSave();
     }
 
     private void DefStroke_Changed(object sender, SelectionChangedEventArgs e)

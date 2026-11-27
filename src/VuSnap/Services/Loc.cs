@@ -171,6 +171,7 @@ public static class Loc
         ["scroll.waiting"] = ("Waiting for the selected window to be active…", "Đang chờ kích hoạt cửa sổ nguồn…"),
         ["scroll.ready"] = ("Ready. Scroll down inside the selected content.", "Sẵn sàng. Cuộn xuống trong vùng nội dung."),
         ["scroll.capturing"] = ("Stitching verified content…", "Đang ghép nội dung đã khớp…"),
+        ["scroll.frameDelayed"] = ("Auto paused while waiting for a new frame. Scroll manually or try Auto again.", "Tự cuộn đã tạm dừng vì chưa có khung hình mới. Hãy cuộn thủ công hoặc bật lại Tự cuộn."),
         ["scroll.pointer"] = ("Auto paused: move the pointer inside the selected area; release modifier keys.", "Tự cuộn tạm dừng: đưa chuột vào vùng chọn, thả phím bổ trợ."),
         ["scroll.gap"] = ("[ERR_SCROLL_006] Overlap not found. Scroll back slowly to the last matching content; Auto stopped.", "[ERR_SCROLL_006] Không tìm thấy phần trùng. Cuộn ngược chậm về nội dung đã ghép; đã dừng tự cuộn."),
         ["scroll.up"] = ("Scrolled up. Return to the last matched position, then scroll down.", "Đã cuộn lên. Trở về vị trí khớp gần nhất rồi cuộn xuống."),
