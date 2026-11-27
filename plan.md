@@ -2,7 +2,7 @@
 
 > Single source of truth for development scope, implementation progress and acceptance.
 > Updated: 2026-11-27 (Asia/Bangkok).
-> Current merged application version: **0.3.0**. CI portable and installer artifacts are available; no public release/tag has been verified.
+> Current merged application version: **0.3.1**. CI portable and installer artifacts are available; no public release/tag has been verified.
 
 ## Working agreement
 
@@ -88,12 +88,14 @@ Evidence: [PR #2](https://github.com/duongtuanvu/vusnap/pull/2), [PR CI](https:/
 
 ## v0.3.1 — Capture Engine Upgrade
 
-- [ ] Adapt MIT WGC implementation with bounded allocation, cancellation, timeout and resource disposal.
-- [ ] Select explicit HWND by window list; no silent desktop fallback.
-- [ ] Integrate WGC active/window selection and preserve GDI region/monitor capture.
-- [ ] Window thumbnails and live preview with bounded resource usage.
+- [x] Adapt MIT WGC implementation with bounded allocation, cancellation, timeout and resource disposal.
+- [x] Select explicit HWND by window list; no silent desktop fallback.
+- [x] Integrate WGC active/window selection and preserve GDI region/monitor capture.
+- [x] Window thumbnails and live preview with bounded resource usage.
 - [ ] Verify actual occluded-window capture, GPU compatibility and mixed DPI on Windows.
-- [ ] Regression tests, CI and merge.
+- [x] Regression tests, CI and merge.
+
+Owner reports WGC works on Windows; detailed acceptance remains open. [PR #5](https://github.com/duongtuanvu/vusnap/pull/5), [CI](https://github.com/duongtuanvu/vusnap/actions/runs/45968603388), merge 8ef66bf6.
 
 ## v0.4.0 — Offline OCR
 
@@ -162,7 +164,7 @@ Pin Screenshot (v0.4.1) and Capture History (v0.4.2) are excluded from the curre
 
 ## Next task
 
-Finish v0.3.1 integration with the no-artifact CI policy. Owner reports WGC works on their Windows machine; detailed occlusion/GPU/DPI acceptance is not yet documented. Next implement v0.4.0 offline OCR, then v0.4.3 Color Picker & QR Scanner only.
+Implement v0.4.0 offline OCR, then v0.4.3 Color Picker & QR Scanner only. WGC merged; detailed runtime acceptance remains open.
 
 ### GitHub Actions resource policy
 
