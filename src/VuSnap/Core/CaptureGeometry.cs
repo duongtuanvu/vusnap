@@ -60,6 +60,19 @@ public static class CaptureGeometry
         return null;
     }
 
+    // Preview is a physical window rectangle, independent of the source pixel dimensions.
+    public static Rectangle FitPreview(Rectangle workArea, int width, int height)
+    {
+        Validate(new Rectangle(0, 0, width, height));
+        Validate(workArea);
+        var availableWidth = Math.Max(1, workArea.Width - 32);
+        var availableHeight = Math.Max(1, workArea.Height - 32);
+        var scale = Math.Min((double)availableWidth / width, (double)availableHeight / height);
+        var w = Math.Clamp((int)Math.Round(width * scale), 1, availableWidth);
+        var h = Math.Clamp((int)Math.Round(height * scale), 1, availableHeight);
+        return new Rectangle(workArea.Left + (workArea.Width - w) / 2, workArea.Top + (workArea.Height - h) / 2, w, h);
+    }
+
     public static Rectangle SelectionPixels(Rectangle bounds, double x, double y, double width, double height, double scaleX, double scaleY)
     {
         Validate(bounds);

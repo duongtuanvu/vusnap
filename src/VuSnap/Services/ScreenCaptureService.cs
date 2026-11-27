@@ -27,15 +27,10 @@ public static class ScreenCaptureService
             case CaptureMode.Monitor: initial = monitor; break;
             case CaptureMode.Desktop: bounds = desktop; initial = desktop; break;
             case CaptureMode.ActiveWindow:
-                if (!WindowTargets.TryGetVisible(WindowTargets.Foreground(), out var window))
-                    throw new CaptureException("ERR_CAPTURE_004");
-                var visible = Rectangle.Intersect(window, desktop);
-                if (visible.Width < 8 || visible.Height < 8 || !monitors.Any(m => m.IntersectsWith(visible)))
-                    throw new CaptureException("ERR_CAPTURE_004");
-                initial = visible;
-                bounds = CaptureGeometry.EditorBounds(visible, monitors);
-                break;
             case CaptureMode.WindowPicker:
+                // These modes must never fall back to desktop pixels.
+                throw new CaptureException("ERR_WGC_006");
+            case CaptureMode.WindowHover:
                 // Full desktop picker; one frozen snapshot, topmost-first rectangles.
                 bounds = desktop;
                 targets = WindowTargets.Enumerate().Select(w => Rectangle.Intersect(w.Bounds, desktop))

@@ -90,6 +90,7 @@ public partial class CaptureWindow : Window
     private readonly BitmapSource _source;
     private readonly DrawingRectangle _screenBounds;
     private readonly CaptureMode _captureMode;
+    private readonly bool _isolated;
     private readonly DrawingRectangle? _initialRegion;
     private readonly IReadOnlyList<DrawingRectangle> _windowTargets;
     private bool _pickingWindow;
@@ -150,16 +151,17 @@ public partial class CaptureWindow : Window
     private TextBox? _editor;             // ô nhập chữ đang mở
     private bool _svDrag, _hueDrag;
 
-    public CaptureWindow(BitmapSource source, DrawingRectangle screenBounds, CaptureMode mode = CaptureMode.Region, IReadOnlyList<DrawingRectangle>? windows = null, DrawingRectangle? initialRegion = null)
+    public CaptureWindow(BitmapSource source, DrawingRectangle screenBounds, CaptureMode mode = CaptureMode.Region, IReadOnlyList<DrawingRectangle>? windows = null, DrawingRectangle? initialRegion = null, bool isolated = false)
     {
         Loc.Lang = _cfg.Language;
         InitializeComponent();
         _source = source;
         _screenBounds = screenBounds;
         _captureMode = mode;
+        _isolated = isolated;
         _initialRegion = initialRegion;
         _windowTargets = windows ?? Array.Empty<DrawingRectangle>();
-        _pickingWindow = mode == CaptureMode.WindowPicker;
+        _pickingWindow = mode == CaptureMode.WindowHover;
         Screenshot.Source = source;
         _loupeBrush = new ImageBrush(source) { Stretch = Stretch.Fill };
         RenderOptions.SetBitmapScalingMode(_loupeBrush, BitmapScalingMode.NearestNeighbor);
@@ -2536,14 +2538,14 @@ public partial class CaptureWindow : Window
     }
 
     private DrawingRectangle SelectedPixels() =>
-        CaptureGeometry.SelectionPixels(_screenBounds, _sel.X, _sel.Y, _sel.Width, _sel.Height, ScaleX, ScaleY);
+        CaptureGeometry.SelectionPixels(_isolated ? new DrawingRectangle(0, 0, _source.PixelWidth, _source.PixelHeight) : _screenBounds, _sel.X, _sel.Y, _sel.Width, _sel.Height, ScaleX, ScaleY);
 
     private BitmapSource RenderFinal()
     {
         CommitText();
         var pixels = SelectedPixels();
-        var px = pixels.Left - _screenBounds.Left;
-        var py = pixels.Top - _screenBounds.Top;
+        var px = pixels.Left - (_isolated ? 0 : _screenBounds.Left);
+        var py = pixels.Top - (_isolated ? 0 : _screenBounds.Top);
         var pw = pixels.Width;
         var ph = pixels.Height;
 
