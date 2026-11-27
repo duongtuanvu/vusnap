@@ -109,7 +109,7 @@ public static class OfflineOcrService
         var exe = TesseractPath() ?? throw new UtilityException("ERR_OCR_001");
         using var input = new MemoryStream();
         var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(image));
+        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
         encoder.Save(input);
         input.Position = 0;
         token.ThrowIfCancellationRequested();
