@@ -215,6 +215,49 @@ try
         try { OfflineOcrService.RecognizeAsync(image,new OcrOption("windows","en-US","test"),cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
         catch (OperationCanceledException) { }
     });
+    Test("Color picker pixel sampling and HEX/RGB/HSV", () =>
+    {
+        var image = System.Windows.Media.Imaging.BitmapSource.Create(2,1,96,96,System.Windows.Media.PixelFormats.Bgr32,null,
+            new byte[] {0,0,255,0, 255,0,0,0},8);
+        image.Freeze();
+        var ready=ColorProbe.Prepare(image);
+        var red=ColorProbe.Read(ready,0,0,new byte[4]);
+        var blue=ColorProbe.Read(ready,1,0,new byte[4]);
+        Check(red.Hex=="#FF0000" && red.Rgb=="rgb(255, 0, 0)" && red.Hsv==(0d,100d,100d));
+        Check(blue.Hex=="#0000FF" && blue.Hsv==(240d,100d,100d));
+        Check(new SampleColor(0,0,0).Hsv==(0d,0d,0d));
+        Check(new SampleColor(128,128,128).Hsv.Saturation==0);
+        Throws(()=>ColorProbe.Read(ready,2,0,new byte[4]));
+        Check(ColorProbe.TryMapPoint(200,100,200,200,199,149,out int x,out int y) && x==199 && y==99);
+        Check(!ColorProbe.TryMapPoint(200,100,200,200,100,49,out _,out _));
+        Check(!ColorProbe.TryMapPoint(200,100,200,200,double.NaN,100,out _,out _));
+    });
+    Test("QR and Code128 synthetic decoding", () =>
+    {
+        foreach(var format in new[]{ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.CODE_128})
+        {
+            const string payload="https://example.invalid/vusnap";
+            var matrix=new ZXing.MultiFormatWriter().encode(payload,format,400,240);
+            var pixels=new byte[checked(matrix.Width*matrix.Height)];
+            for(int y=0;y<matrix.Height;y++) for(int x=0;x<matrix.Width;x++) pixels[y*matrix.Width+x]=matrix[x,y]?(byte)0:(byte)255;
+            var image=System.Windows.Media.Imaging.BitmapSource.Create(matrix.Width,matrix.Height,96,96,System.Windows.Media.PixelFormats.Gray8,null,pixels,matrix.Width);
+            image.Freeze();
+            var hit=LocalBarcodeService.DecodeAsync(image).GetAwaiter().GetResult();
+            Check(hit is not null && hit.Text==payload && hit.Format==format.ToString());
+        }
+    });
+    Test("QR blank input, limits and cancellation", () =>
+    {
+        Throws(()=>LocalBarcodeService.ValidateSize(10000,10000));
+        Throws(()=>LocalBarcodeService.ValidateSize(0,100));
+        var pixels=Enumerable.Repeat((byte)255,64*64).ToArray();
+        var image=System.Windows.Media.Imaging.BitmapSource.Create(64,64,96,96,System.Windows.Media.PixelFormats.Gray8,null,pixels,64);
+        image.Freeze();
+        Check(LocalBarcodeService.DecodeAsync(image).GetAwaiter().GetResult() is null);
+        using var cancel=new CancellationTokenSource(); cancel.Cancel();
+        try { LocalBarcodeService.DecodeAsync(image,cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
+        catch(OperationCanceledException) { }
+    });
 }
 finally { try { Directory.Delete(folder, true); } catch { } }
 return failures == 0 ? 0 : 1;

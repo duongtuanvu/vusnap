@@ -18,3 +18,8 @@ This increment captures the visible desktop pixels, not hidden window content. O
 ## OCR
 
 - Uses Windows.Media.Ocr (Windows SDK) and optional user-installed [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) via documented stdin/stdout CLI. No Tesseract binaries or language models redistributed. Models are user-installed and recognition is local. [Microsoft OCR language pack documentation](https://learn.microsoft.com/windows/powertoys/text-extractor).
+
+## Color and barcode tools (v0.4.3)
+
+- Barcode decoding: [ZXing.Net 0.16.11](https://www.nuget.org/packages/ZXing.Net/0.16.11), Apache-2.0, pinned NuGet package. Reviewed upstream `RGBLuminanceSource`, `BarcodeReaderGeneric`, `DecodingOptions` and license at [e701eec](https://github.com/micjahn/ZXing.Net/tree/e701eec9ab19807a0f5b671ce632db659f8a3a13) (source review revision, not asserted to be the package build revision). Full Apache-2.0 text appended to bundled LICENSE; VuSnap code remains MIT.
+- Color picker reuses existing GDI/WGC snapshot architecture and WPF pixel operations; no native color-picker dependency. All analysis is local and explicitly triggered; no automatic URL navigation, clipboard write, image history or persistence.
