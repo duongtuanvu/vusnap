@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using VuSnap.Core;
 using VuSnap.Models;
+using CaptureMode = VuSnap.Models.CaptureMode;
 using VuSnap.Services;
 using Point = System.Windows.Point;
 

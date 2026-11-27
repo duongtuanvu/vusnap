@@ -12,6 +12,7 @@ using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Win32;
 using VuSnap.Models;
+using CaptureMode = VuSnap.Models.CaptureMode;
 using VuSnap.Core;
 using VuSnap.Services;
 using Color = System.Windows.Media.Color;

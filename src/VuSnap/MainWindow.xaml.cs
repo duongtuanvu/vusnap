@@ -11,6 +11,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using Ellipse = System.Windows.Shapes.Ellipse;
 using VuSnap.Models;
+using CaptureMode = VuSnap.Models.CaptureMode;
 using VuSnap.Services;
 using VuSnap.Windows;
 
