@@ -10,10 +10,12 @@ public static class AtomicFile
         var folder = Path.GetDirectoryName(fullPath) ?? throw new IOException("ERR_EXPORT_PATH");
         Directory.CreateDirectory(folder);
         var temporary = Path.Combine(folder, ".vusnap-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var ownsTemporary = false;
         try
         {
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
+                ownsTemporary = true;
                 write(stream);
                 stream.Flush(flushToDisk: true);
             }
@@ -21,7 +23,8 @@ public static class AtomicFile
         }
         finally
         {
-            try { File.Delete(temporary); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            if (ownsTemporary)
+                try { File.Delete(temporary); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
     }
 

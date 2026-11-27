@@ -18,6 +18,8 @@ public static class ShortcutHelper
     /// <summary>Các nút trên thanh lưu/đóng (theo thứ tự hiển thị).</summary>
     public static readonly string[] ActionBarIds = { "Cancel", "SaveAs", "QuickSave", "Copy", "Confirm" };
 
+    private static readonly HashSet<string> NamedKeys = new(Enum.GetNames<Key>(), StringComparer.OrdinalIgnoreCase);
+
     private static readonly Dictionary<string, string> Default = new()
     {
         ["Select"] = "V", ["Text"] = "T", ["Pen"] = "P", ["Line"] = "L", ["Arrow"] = "A", ["Rectangle"] = "R",
@@ -57,28 +59,38 @@ public static class ShortcutHelper
     {
         mods = ModifierKeys.None; key = Key.None;
         if (string.IsNullOrWhiteSpace(text) || text.Length > 80) return false;
-        var tokens = text.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Length == 0) return false;
+        var tokens = text.Split('+', StringSplitOptions.TrimEntries);
+        if (tokens.Any(string.IsNullOrEmpty)) return false;
         foreach (var t in tokens[..^1])
         {
-            switch (t.ToLowerInvariant())
+            var bit = t.ToLowerInvariant() switch
             {
-                case "ctrl" or "control": mods |= ModifierKeys.Control; break;
-                case "alt": mods |= ModifierKeys.Alt; break;
-                case "shift": mods |= ModifierKeys.Shift; break;
-                case "win" or "windows": mods |= ModifierKeys.Windows; break;
-                default: return false;
-            }
+                "ctrl" or "control" => ModifierKeys.Control,
+                "alt" => ModifierKeys.Alt,
+                "shift" => ModifierKeys.Shift,
+                "win" or "windows" => ModifierKeys.Windows,
+                _ => ModifierKeys.None
+            };
+            if (bit == ModifierKeys.None || (mods & bit) != 0) return false;
+            mods |= bit;
         }
-        return !char.IsDigit(tokens[^1][0]) && Enum.TryParse(tokens[^1], true, out key) &&
+        return NamedKeys.Contains(tokens[^1]) && Enum.TryParse(tokens[^1], true, out key) &&
             Enum.IsDefined(key) && key is not (Key.None or Key.Escape or Key.LeftAlt or Key.RightAlt or Key.LeftCtrl or Key.RightCtrl or
                 Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System or Key.ImeProcessed or Key.DeadCharProcessed or Key.F10);
     }
+
+    public static bool TryParseGlobal(string? text, out ModifierKeys mods, out Key key) =>
+        TryParse(text, out mods, out key) && mods != ModifierKeys.None && key != Key.F12 && KeyInterop.VirtualKeyFromKey(key) > 0;
+
+    public static bool Equivalent(string? a, string? b) =>
+        TryParse(a, out var am, out var ak) && TryParse(b, out var bm, out var bk) && am == bm && ak == bk;
 
     /// <summary>Tên phím dễ đọc: D1 -> 1, NumPad1 -> Num1, OemPlus -> +...</summary>
     public static string Pretty(string combo)
     {
         if (string.IsNullOrEmpty(combo)) return combo;
+        if (!TryParse(combo, out var mods, out var key)) return combo;
+        combo = Format(mods, key);
         var parts = combo.Split('+', StringSplitOptions.RemoveEmptyEntries).ToList();
         // "Ctrl++" (phím +) được Format thành "Ctrl+OemPlus" nên không có dấu + thừa
         var k = parts[^1];
