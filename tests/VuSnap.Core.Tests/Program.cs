@@ -178,6 +178,32 @@ try
         s.CaptureDelaySeconds = 4; Check(!SettingsService.Validate(s));
         s.CaptureDelaySeconds = 0; s.DefaultCaptureMode = "invalid"; Check(!SettingsService.Validate(s));
     });
+    Test("WGC bounded frames and scaled preview", () =>
+    {
+        GraphicsWindowCapture.ValidateFrameSize(3840,2160);
+        Throws(() => GraphicsWindowCapture.ValidateFrameSize(0,100));
+        Throws(() => GraphicsWindowCapture.ValidateFrameSize(10000,10000));
+        var area = new System.Drawing.Rectangle(-1920,0,1920,1040);
+        var preview = CaptureGeometry.FitPreview(area,3840,2160);
+        Check(area.Contains(preview) && preview.Width > 0 && preview.Height > 0);
+        Check(Math.Abs((double)preview.Width / preview.Height - 3840.0 / 2160) < 0.01);
+    });
+    Test("isolated capture cannot silently use GDI", () =>
+    {
+        foreach (var mode in new[] { CaptureMode.ActiveWindow, CaptureMode.WindowPicker })
+        {
+            try { ScreenCaptureService.Capture(new CaptureRequest(mode)); throw new Exception("Expected backend rejection"); }
+            catch (CaptureException ex) { Check(ex.Code == "ERR_WGC_006"); }
+        }
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        try
+        {
+            GraphicsWindowCapture.TakeAsync(new WindowTargets.Target(IntPtr.Zero, System.Drawing.Rectangle.Empty,0,"test"), cancellation.Token).GetAwaiter().GetResult();
+            throw new Exception("Expected cancellation");
+        }
+        catch (OperationCanceledException) { }
+    });
 }
 finally { try { Directory.Delete(folder, true); } catch { } }
 return failures == 0 ? 0 : 1;

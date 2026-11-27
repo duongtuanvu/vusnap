@@ -8,6 +8,10 @@ A lightweight Windows screenshot and annotation tool built with C#, WPF and .NET
 
 [![CI](https://github.com/duongtuanvu/vusnap/actions/workflows/ci.yml/badge.svg)](https://github.com/duongtuanvu/vusnap/actions/workflows/ci.yml)
 
+## Windows Graphics Capture (0.3.1)
+
+Active Window and Select Window use WGC to capture the selected window directly; select a window from the list with live DWM preview. Hover Window uses the visible desktop crop. Region/Monitor/Desktop/Repeat remain GDI. WGC requires Windows 10 version 2004 or later and a supported graphics device. No silent fallback to the desktop occurs. Owner reports initial runtime success; detailed GPU, occlusion and DPI acceptance remains open.
+
 ## Advanced capture
 
 Choose the capture mode and delay in the main window, or use the tray menu. Repeat reuses the last successfully exported region in the current session when monitor layout is unchanged. Window modes capture visible desktop pixels, including occlusions; they do not capture hidden window content. Press the capture hotkey again to cancel the countdown. See [third-party reuse](docs/THIRD_PARTY.md).

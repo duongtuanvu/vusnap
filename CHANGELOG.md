@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - Unreleased
+
+- WGC isolated HWND capture with D3D11, bounded frame allocation, timeout and cancellation.
+- Explicit window list with live DWM preview; retain GDI region, monitor and visible-window hover modes.
+- Reject desktop fallback for isolated window capture. Add WGC geometry and routing regression coverage.
+
 ## [0.3.0] - Unreleased
 
 - Add region, monitor, desktop, active window, window picker and repeat capture modes.

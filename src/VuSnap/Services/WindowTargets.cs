@@ -16,13 +16,17 @@ public static class WindowTargets
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder name, int maxCount);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder title, int maxCount);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT value, int size);
     [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
     [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
     private const int DWMWA_CLOAKED = 14;
     private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
-    public sealed record Target(IntPtr Handle, SD.Rectangle Bounds);
+    public sealed record Target(IntPtr Handle, SD.Rectangle Bounds, uint ProcessId, string Title)
+    {
+        public string Display => $"{Title}  ({Bounds.Width} × {Bounds.Height})";
+    }
     public static IntPtr Foreground() => GetForegroundWindow();
 
     public static bool TryGetVisible(IntPtr hwnd, out SD.Rectangle bounds)
@@ -37,12 +41,23 @@ public static class WindowTargets
         return TryGetWindowBounds(hwnd, out bounds) && bounds.Width >= 8 && bounds.Height >= 8;
     }
 
+    public static Target? Identify(IntPtr hwnd)
+    {
+        if (!TryGetVisible(hwnd, out var rect) || GetWindowThreadProcessId(hwnd, out uint pid) == 0 || pid == 0) return null;
+        var title = new StringBuilder(512);
+        GetWindowText(hwnd, title, title.Capacity);
+        return new Target(hwnd, rect, pid, string.IsNullOrWhiteSpace(title.ToString()) ? Loc.T("wgc.untitled") : title.ToString());
+    }
+
+    public static bool IsCurrent(Target target) => TryGetVisible(target.Handle, out _) &&
+        GetWindowThreadProcessId(target.Handle, out uint pid) != 0 && pid == target.ProcessId;
+
     public static IReadOnlyList<Target> Enumerate()
     {
         var result = new List<Target>();
         EnumWindows((hwnd, _) =>
         {
-            if (TryGetVisible(hwnd, out var rect)) result.Add(new Target(hwnd, rect));
+            if (Identify(hwnd) is { } target) result.Add(target);
             return result.Count < 512;
         }, IntPtr.Zero);
         return result;

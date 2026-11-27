@@ -217,10 +217,28 @@ public partial class MainWindow : Window
                 await Task.Delay(250, token);
             }
             var request = new CaptureRequest(mode, delay, _lastRegion);
-            var result = await Task.Run(() => ScreenCaptureService.Capture(request, token), token);
+            CaptureResult result;
+            bool isolated = mode is CaptureMode.ActiveWindow or CaptureMode.WindowPicker;
+            if (isolated)
+            {
+                WindowTargets.Target? target;
+                if (mode == CaptureMode.WindowPicker)
+                {
+                    var picker = new WindowSourcePicker(token);
+                    if (picker.ShowDialog() != true) throw new OperationCanceledException();
+                    target = picker.SelectedTarget;
+                }
+                else target = WindowTargets.Identify(WindowTargets.Foreground());
+                if (target is null) throw new CaptureException("ERR_WGC_002");
+                var image = await GraphicsWindowCapture.TakeAsync(target, token);
+                var work = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).WorkingArea;
+                var bounds = VuSnap.Core.CaptureGeometry.FitPreview(work, image.PixelWidth, image.PixelHeight);
+                result = new CaptureResult(image, bounds, mode, Array.Empty<System.Drawing.Rectangle>(), null, ScreenCaptureService.Monitors());
+            }
+            else result = await Task.Run(() => ScreenCaptureService.Capture(request, token), token);
             token.ThrowIfCancellationRequested();
-            var overlay = new CaptureWindow(result.Image, result.Bounds, result.Mode, result.Windows, result.InitialRegion);
-            overlay.OutputCompleted += region => _lastRegion = new LastCaptureRegion(region, result.MonitorLayout);
+            var overlay = new CaptureWindow(result.Image, result.Bounds, result.Mode, result.Windows, result.InitialRegion, isolated);
+            if (!isolated) overlay.OutputCompleted += region => _lastRegion = new LastCaptureRegion(region, result.MonitorLayout);
             overlay.Closed += (_, _) =>
             {
                 _capturing = false;
@@ -243,6 +261,12 @@ public partial class MainWindow : Window
                     "ERR_CAPTURE_004" => "capture.noWindow",
                     "ERR_CAPTURE_005" => "capture.noRepeat",
                     "ERR_CAPTURE_003" => "capture.tooLarge",
+                    "ERR_WGC_001" => "wgc.unsupported",
+                    "ERR_WGC_002" => "wgc.unavailable",
+                    "ERR_WGC_003" => "wgc.timeout",
+                    "ERR_WGC_004" => "wgc.failed",
+                    "ERR_WGC_005" => "wgc.resized",
+                    "ERR_WGC_006" => "wgc.failed",
                     _ => "status.captureError"
                 };
                 ShowFromTray();
