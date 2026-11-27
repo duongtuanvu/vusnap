@@ -1,5 +1,7 @@
 # VuSnap
 
+![VuSnap logo](docs/images/logo.svg)
+
 Ứng dụng chụp màn hình và chú thích ảnh trên Windows, sử dụng C#, WPF và .NET 10. Phát triển độc lập bởi vudt, dựa trên [NinoMark v0.5.0](https://github.com/TokisakiNinoVn/NinoMark/commit/bab3f157d21a0ae52b2a966570c492b5f4c80da7).
 
 [English](README.md) · [Bản phát hành](https://github.com/duongtuanvu/vusnap/releases) · [Báo lỗi](https://github.com/duongtuanvu/vusnap/issues)
@@ -24,4 +26,4 @@ dotnet run --project src/VuSnap/VuSnap.csproj
 
 ## Giấy phép
 
-MIT. Giữ nguyên thông báo bản quyền tác giả gốc Tokisaki Nino và bổ sung vudt trong [LICENSE](LICENSE). Logo và icon gốc được giữ tạm thời; lịch sử nguồn tại [docs/UPSTREAM_CHANGELOG.md](docs/UPSTREAM_CHANGELOG.md).
+MIT. Giữ nguyên thông báo bản quyền tác giả gốc Tokisaki Nino và bổ sung vudt trong [LICENSE](LICENSE). VuSnap sử dụng logo và icon riêng; lịch sử nguồn tại [docs/UPSTREAM_CHANGELOG.md](docs/UPSTREAM_CHANGELOG.md).

@@ -58,6 +58,13 @@ Evidence: [PR #1](https://github.com/duongtuanvu/vusnap/pull/1), [PR CI](https:/
 - [ ] Record benchmark baseline and remaining non-blocking technical debt.
 - [ ] CI and acceptance pass; merge, update plan.
 
+### v0.2.1 implementation candidate (pending CI/merge)
+
+- [ ] Metadata-only history and gesture coalescing; pointer capture recovery.
+- [ ] Hotkey parsing/rollback, serialized settings updates and image export regression tests.
+- [ ] Independent logo and seven-size ICO; CI portable and installer packaging verification.
+- [ ] Manual Windows interaction and benchmark acceptance remain outstanding.
+
 ## v0.3.0 — Advanced Capture
 
 - [ ] Introduce capture request/result model, capture modes and consistent error handling.
