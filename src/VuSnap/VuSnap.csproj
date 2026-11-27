@@ -10,16 +10,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>VuSnap</AssemblyName>
     <RootNamespace>VuSnap</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>VuSnap</Product>
     <Company>vudt</Company>
     <Copyright>Copyright (c) 2026 Tokisaki Nino; Copyright (c) 2026 vudt</Copyright>
     <Description>Windows screenshot and annotation tool</Description>
     <ApplicationIcon>Assets/app-fit.ico</ApplicationIcon>
-    <!-- Tối ưu RAM -->
-    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
-    <ServerGarbageCollector>false</ServerGarbageCollector>
-    <TieredPGO>false</TieredPGO>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
@@ -34,7 +30,6 @@
     <Using Remove="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
     <PackageReference Include="Material.Icons.WPF" Version="3.0.2" />
   </ItemGroup>
 </Project>

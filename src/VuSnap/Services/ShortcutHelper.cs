@@ -56,7 +56,7 @@ public static class ShortcutHelper
     public static bool TryParse(string? text, out ModifierKeys mods, out Key key)
     {
         mods = ModifierKeys.None; key = Key.None;
-        if (string.IsNullOrWhiteSpace(text)) return false;
+        if (string.IsNullOrWhiteSpace(text) || text.Length > 80) return false;
         var tokens = text.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (tokens.Length == 0) return false;
         foreach (var t in tokens[..^1])
@@ -70,7 +70,9 @@ public static class ShortcutHelper
                 default: return false;
             }
         }
-        return Enum.TryParse(tokens[^1], true, out key) && key != Key.None;
+        return !char.IsDigit(tokens[^1][0]) && Enum.TryParse(tokens[^1], true, out key) &&
+            Enum.IsDefined(key) && key is not (Key.None or Key.Escape or Key.LeftAlt or Key.RightAlt or Key.LeftCtrl or Key.RightCtrl or
+                Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System or Key.ImeProcessed or Key.DeadCharProcessed or Key.F10);
     }
 
     /// <summary>Tên phím dễ đọc: D1 -> 1, NumPad1 -> Num1, OemPlus -> +...</summary>
