@@ -1,0 +1,19 @@
+name: Preview build
+on:
+  workflow_dispatch:
+    inputs:
+      installer:
+        description: Include installer in addition to portable ZIP
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  package:
+    uses: ./.github/workflows/package.yml
+    with:
+      upload: true
+      installer: ${{ inputs.installer }}
