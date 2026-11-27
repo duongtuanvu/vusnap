@@ -1,0 +1,12 @@
+name: Approved icon portable (one-time)
+on:
+  push:
+    branches: [preview/approved-brand-icon]
+permissions:
+  contents: read
+jobs:
+  package:
+    uses: ./.github/workflows/package.yml
+    with:
+      upload: true
+      installer: false
