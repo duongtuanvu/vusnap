@@ -82,6 +82,7 @@ public partial class CaptureWindow
         _drag = Drag.None;
         if (was == Drag.Drawing)
         {
+            ClearPenPreview();
             if (_current is not null) Ink.Children.Remove(_current);
             _current = null;
         }

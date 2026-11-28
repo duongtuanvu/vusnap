@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Unqualified application pack URIs resolve against this test host's entry assembly. -->
+    <Resource Include="../../src/VuSnap/Assets/app-fit.ico" Link="Assets/app-fit.ico" />
+    <Resource Include="../../src/VuSnap/Assets/app-logo.png" Link="Assets/app-logo.png" />
     <ProjectReference Include="../../src/VuSnap/VuSnap.csproj" />
   </ItemGroup>
 </Project>

@@ -15,6 +15,27 @@ internal sealed class ScrollCaptureControl
 internal sealed record ScrollCaptureProgress(int Width, int Height, int Frames, string Message);
 internal sealed record ScrollCaptureOutcome(BitmapSource Image, int Frames, string Message);
 
+// WGC frame timestamps and Stopwatch.GetElapsedTime(0) both use the system QPC clock.
+internal sealed class ScrollWheelFeedback
+{
+    private TimeSpan? _sentAt;
+    public bool Pending => _sentAt.HasValue;
+    public int UnchangedSteps { get; private set; }
+
+    public void Sent(TimeSpan now) => _sentAt = now;
+    public bool Accepts(TimeSpan frameTime) => _sentAt is not { } sent || frameTime > sent;
+    public bool TimedOut(TimeSpan now) => _sentAt is { } sent && now - sent >= TimeSpan.FromSeconds(5);
+
+    public void Observe(TimeSpan frameTime, int addedRows)
+    {
+        if (!Pending || !Accepts(frameTime)) return;
+        UnchangedSteps = addedRows > 0 ? 0 : UnchangedSteps + 1;
+        _sentAt = null;
+    }
+
+    public void Reset() { _sentAt = null; UnchangedSteps = 0; }
+}
+
 internal static class ScrollWheel
 {
     internal enum Result { Waiting, Sent, Blocked }

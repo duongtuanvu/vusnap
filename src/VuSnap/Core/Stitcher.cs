@@ -32,6 +32,10 @@ namespace VuSnap.Core
         }
 
         const int UpShift = -2;           // BestShift: the content moved down (scrolled up)
+        // A small repeated graphic can produce perfect row votes on unrelated pages.
+        static int MinimumOverlap(int movingRows) => Math.Max(24, movingRows / 8);
+        static int MinimumEvidence(int movingRows) => Math.Max(8, MinimumOverlap(movingRows) / 4);
+
         const int Bins = 32;              // brightness bands per row for the tolerant match
         const int Cell = 8;               // floating elements are tracked in cells of this size
 
@@ -109,7 +113,8 @@ namespace VuSnap.Core
                 if (d < 0) { result = Result.Lost; return px; }
                 tolerant = true;
             }
-            if (d == 0) { result = Result.Same; return px; }       // something animates, but nothing scrolled
+            if (d == 0) { result = Result.Same; return px; } // animation without scrolling
+            if (h - top - bot - d < MinimumOverlap(h - top - bot)) { result = Result.Lost; return px; }
             // A fraction of a row left over is carried to the next frame, once this one is kept: a page that moves 4.2
             // rows a frame gets a fifth row every fifth frame instead of slowly losing it.
             if (tolerant) carry = carryNext;
@@ -228,7 +233,7 @@ namespace VuSnap.Core
             if (prevFeat == null) prevFeat = Features(prev);
             curFeat = Features(px);
             curFeatOf = px;
-            int maxD = n - Math.Max(24, n / 8), step = n > 600 ? 2 : 1; // tall areas: every other row is enough
+            int maxD = n - MinimumOverlap(n), step = n > 600 ? 2 : 1; // tall areas: every other row is enough
             // Either frame may be the blended one: the fraction is tried on the previous frame (a shift of d + f) and on
             // this one (d - f). Whole rows first for every shift; fractions only around the three best of them.
             const int Subs = 5;
@@ -249,7 +254,7 @@ namespace VuSnap.Core
                     sum += e / bins;
                     considered++;
                 }
-                return considered >= 16 ? sum / considered : double.MaxValue;
+                return considered >= Math.Max(16, MinimumEvidence(n)) ? sum / considered : double.MaxValue;
             };
             double[] err = new double[maxD + 1], shift = new double[maxD + 1];
             for (int d = 0; d <= maxD; d++) { if ((d & 15) == 0) cancel.ThrowIfCancellationRequested(); err[d] = errAt(d, 0); shift[d] = d; }
@@ -372,7 +377,7 @@ namespace VuSnap.Core
                 considered++;
                 if (hs[i] == prevHash[i + best]) matched++;
             }
-            if (considered < 4 || matched < considered * 0.8) return -1;
+            if (considered < MinimumEvidence(to - from) || matched < considered * 0.8) return -1;
             return best;
         }
 
@@ -382,7 +387,7 @@ namespace VuSnap.Core
             int best = -1;
             double bestScore = 0.9;
             var scores = new List<(int Shift, double Score)>();
-            for (int d = 1; d < to - from - 8; d++)
+            for (int d = 1; d <= to - from - MinimumOverlap(to - from); d++)
             {
                 if ((d & 31) == 0) cancel.ThrowIfCancellationRequested();
                 int considered = 0, matched = 0;
@@ -392,7 +397,7 @@ namespace VuSnap.Core
                     considered++;
                     if (hs[i] == prevHash[i + d]) matched++;
                 }
-                if (considered < 8) continue;
+                if (considered < MinimumEvidence(to - from)) continue;
                 double sc = (double)matched / considered;
                 scores.Add((d,sc));
                 if (sc > bestScore) { bestScore = sc; best = d; }
