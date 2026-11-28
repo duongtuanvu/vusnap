@@ -34,7 +34,6 @@ internal static class EditorRegressionTests
         {
             try
             {
-                Application.ResourceAssembly = typeof(MainWindow).Assembly;
                 var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
                 app.Resources.MergedDictionaries.Add(new ResourceDictionary
                 {
